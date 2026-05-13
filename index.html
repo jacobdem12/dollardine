@@ -67,7 +67,7 @@
 
 <div id="page-main" class="page">
   <div class="top-bar">
-    <div class="top-bar-left mobile-menu-trigger" onclick="toggleMobileNav()" id="mobile-menu-btn">
+    <div class="top-bar-left mobile-menu-trigger" id="mobile-menu-btn">
       <div class="school-badge" id="main-badge" style="background:#cc0000; width:28px; height:28px; font-size:12px; border-radius:6px;">NC</div>
       <div>
         <div class="top-bar-title">Dining Dollars</div>
@@ -84,11 +84,11 @@
   </div>
 
   <div id="mobile-nav" class="mobile-nav">
-    <button class="mobile-nav-item" data-view="dashboard" onclick="navTo('dashboard');">Dashboard</button>
-    <button class="mobile-nav-item" data-view="log" onclick="navTo('log');">Log meal</button>
-    <button class="mobile-nav-item" data-view="history" onclick="navTo('history');">History</button>
-    <button class="mobile-nav-item" data-view="edit" onclick="navTo('edit');">Settings</button>
-    <button class="mobile-nav-item" id="logout-mobile-btn" onclick="handleLogout();">Logout</button>
+    <button class="mobile-nav-item" data-view="dashboard">Dashboard</button>
+    <button class="mobile-nav-item" data-view="log">Log meal</button>
+    <button class="mobile-nav-item" data-view="history">History</button>
+    <button class="mobile-nav-item" data-view="edit">Settings</button>
+    <button class="mobile-nav-item" id="logout-mobile-btn">Logout</button>
   </div>
 
   <div id="view-dashboard" class="view active">
@@ -110,20 +110,18 @@
         </div>
       </div>
 
-      <div id="swipe-status" class="mobile-swipes" style="margin-bottom: 1.5rem; text-align: center;">
-        <div class="stat-lbl" style="margin-bottom: 4px;">Meal Swipes</div>
-        <div id="dash-swipes-large" style="font-size: 26px; font-weight: 700; color: var(--green); font-family: 'Nunito', sans-serif;">0</div>
-      </div>
-
       <div class="dash-actions">
+        <div id="swipe-status" class="dash-action-btn swipe-display mobile-swipes">
+          <div class="action-text">Meal Swipes</div>
+          <div id="dash-swipes-large" class="swipe-number">0</div>
+        </div>
         <button class="dash-action-btn primary-action" data-view="log">
-          <span class="action-icon">＋</span> Log a meal
+          <span class="action-icon">＋</span>
+          <span class="action-text">Log a meal</span>
         </button>
         <button class="dash-action-btn" data-view="history">
-          <span class="action-icon">≡</span> View history
-        </button>
-        <button class="dash-action-btn desktop-only" data-view="edit">
-          <span class="action-icon">⚙</span> Edit settings
+          <span class="action-icon">≡</span>
+          <span class="action-text">View history</span>
         </button>
       </div>
     </div>
@@ -159,16 +157,18 @@
   <div id="view-log" class="view">
     <div class="log-left">
       <div class="view-title" style="font-size:15px;">Locations</div>
-      <div id="location-list"></div>
+      <button id="location-selector-btn" class="btn btn-ghost location-selector-btn" type="button">
+        <span id="location-selector-label">Locations: Select a location ↓</span>
+      </button>
+      <div id="location-list" class="location-list-dropdown"></div>
     </div>
     <div class="log-right">
       <div>
         <div class="view-title">Meal details</div>
         <div class="view-sub">Select a location, pick meal type, then save.</div>
       </div>
-      <div>
-        <label>Selected location</label>
-        <input type="text" id="log-location" placeholder="Select a location on the left" readonly style="cursor:default; color:var(--text2);">
+      <div style="display:none;">
+        <input type="text" id="log-location" placeholder="Select a location on the left" readonly>
       </div>
       <div>
         <label>Meal type</label>
@@ -204,7 +204,10 @@
         <div class="view-title">History</div>
         <div class="view-sub">All logged meals and purchases</div>
       </div>
-      <button id="reset-all-btn" class="btn btn-danger" style="width:auto; padding:9px 16px; margin-top:0;">Reset all data</button>
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <button id="sort-week-btn" class="btn btn-secondary" style="width:auto; padding:9px 16px; margin-top:0;">Sort by Week</button>
+        <button id="reset-all-btn" class="btn btn-danger" style="width:auto; padding:9px 16px; margin-top:0;">Reset all data</button>
+      </div>
     </div>
     <div id="history-content"></div>
   </div>

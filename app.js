@@ -9,7 +9,9 @@ const state = {
   daysLeft: 0,
   swipes: 0,
   isUnlimited: false,
-  entries: []
+  recentLocation: '',
+  entries: [],
+  sortByWeek: false
 };
 
 const CIRC = 2 * Math.PI * 88;
@@ -53,6 +55,11 @@ const UI = {
   avgDinner: document.getElementById('avg-dinner'),
   avgSnacks: document.getElementById('avg-snacks'),
   locationList: document.getElementById('location-list'),
+  locationSelectorBtn: document.getElementById('location-selector-btn'),
+  locationSelectorLabel: document.getElementById('location-selector-label'),
+  mobileMenuTrigger: document.getElementById('mobile-menu-btn'),
+  mobileNav: document.getElementById('mobile-nav'),
+  mobileNavItems: Array.from(document.querySelectorAll('.mobile-nav-item')),
   logLocation: document.getElementById('log-location'),
   mealTypeRow: document.getElementById('meal-type-row'),
   amountPreview: document.getElementById('amount-preview'),
@@ -64,6 +71,7 @@ const UI = {
   backDashboardBtn: document.getElementById('back-dashboard-btn'),
   historyContent: document.getElementById('history-content'),
   resetAllBtn: document.getElementById('reset-all-btn'),
+  sortWeekBtn: document.getElementById('sort-week-btn'),
   editSchoolDropdown: document.getElementById('edit-school-dropdown'),
   editBalance: document.getElementById('edit-balance'),
   editDays: document.getElementById('edit-days'),
@@ -101,13 +109,23 @@ function initUI() {
   UI.setupSchoolDropdown.addEventListener('change', onSetupSchoolChange);
   UI.startTrackingBtn.addEventListener('click', startTracking);
   UI.logoutBtn.addEventListener('click', handleLogout);
+  UI.mobileMenuTrigger.addEventListener('click', toggleMobileNav);
+  UI.mobileNavItems.forEach(btn => btn.addEventListener('click', () => {
+    if (btn.id === 'logout-mobile-btn') return handleLogout();
+    const view = btn.dataset.view;
+    if (view) navTo(view);
+  }));
   UI.navPills.forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
   UI.dashActionButtons.forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
+  UI.locationSelectorBtn.addEventListener('click', toggleLocationDropdown);
   UI.logMealBtn.addEventListener('click', logMeal);
   UI.swipeActionBtn.addEventListener('click', useSwipe);
   UI.locationList.addEventListener('click', event => {
     const btn = event.target.closest('.location-btn');
-    if (btn) selectLocation(btn);
+    if (btn) {
+      selectLocation(btn);
+      closeLocationDropdown();
+    }
   });
   UI.mealTypeRow.addEventListener('click', event => {
     const btn = event.target.closest('.meal-type-btn');
@@ -116,6 +134,7 @@ function initUI() {
   UI.logAmount.addEventListener('input', updateAmountPreview);
   UI.backDashboardBtn.addEventListener('click', () => showView('dashboard'));
   UI.resetAllBtn.addEventListener('click', resetAll);
+  UI.sortWeekBtn.addEventListener('click', toggleSortByWeek);
   UI.saveMainDataBtn.addEventListener('click', saveMainData);
   UI.cancelSettingsBtn.addEventListener('click', () => showView('dashboard'));
   UI.logoutMainBtn.addEventListener('click', handleLogout);
@@ -136,13 +155,28 @@ function initUI() {
 
 // Add this to app.js
 function toggleMobileNav() {
-  document.getElementById('mobile-nav').classList.toggle('active');
+  if (!UI.mobileNav) return;
+  UI.mobileNav.classList.toggle('active');
 }
 
-// Helper to make buttons work
+function closeMobileNav() {
+  if (!UI.mobileNav) return;
+  UI.mobileNav.classList.remove('active');
+}
+
+function toggleLocationDropdown() {
+  if (!UI.locationList) return;
+  UI.locationList.classList.toggle('active');
+}
+
+function closeLocationDropdown() {
+  if (!UI.locationList) return;
+  UI.locationList.classList.remove('active');
+}
+
 function navTo(viewName) {
-  toggleMobileNav(); // Close menu after clicking
-  showView(viewName); // Call your existing view switcher
+  closeMobileNav();
+  showView(viewName);
 }
 
 function onSetupSchoolChange(event) {
@@ -235,6 +269,9 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   UI.navPills.forEach(btn => btn.classList.remove('active'));
 
+  closeLocationDropdown();
+  closeMobileNav();
+
   view.classList.add('active');
   const activeNav = UI.navPills.find(btn => btn.dataset.view === name);
   if (activeNav) activeNav.classList.add('active');
@@ -255,6 +292,7 @@ function buildLocationList() {
       <span class="loc-section-label">${section.label}</span>
       ${section.locs.map(loc => `
         <button class="location-btn" 
+          type="button"
           data-name="${loc.name}"
           data-b="${loc.b}"
           data-l="${loc.l}"
@@ -273,6 +311,15 @@ function buildLocationList() {
   UI.amountPreview.textContent = '—';
   UI.logNote.value = '';
   UI.swipeActionBtn.style.display = 'none';
+  UI.locationSelectorLabel.textContent = state.recentLocation ? `Locations: ${state.recentLocation} ↓` : 'Locations: Select a location ↓';
+
+  if (state.recentLocation) {
+    const recentButton = Array.from(document.querySelectorAll('.location-btn'))
+      .find(btn => btn.dataset.name === state.recentLocation);
+    if (recentButton) {
+      selectLocation(recentButton);
+    }
+  }
 }
 
 function selectLocation(button) {
@@ -280,12 +327,15 @@ function selectLocation(button) {
   button.classList.add('selected');
   selectedLocation = button;
   UI.logLocation.value = button.dataset.name;
+  UI.locationSelectorLabel.textContent = `Locations: ${button.dataset.name} ↓`;
+
+  state.recentLocation = button.dataset.name;
+  if (currentUser) saveUserState(currentUser, state);
 
   const isDiningHall = button.dataset.dh === 'true';
   UI.swipeActionBtn.style.display = isDiningHall ? 'block' : 'none';
   applyMealPrice();
 }
-
 function applyMealPrice() {
   if (!selectedLocation) {
     UI.logAmount.value = '';
@@ -489,32 +539,97 @@ function renderHistory() {
     snack: 'badge-snack'
   };
 
-  UI.historyContent.innerHTML = `
-    <table class="entry-table">
-      <thead>
-        <tr><th>Date</th><th>Location</th><th>Note</th><th>Type</th><th>Amount</th><th>Action</th></tr>
-      </thead>
-      <tbody>
-        ${state.entries.map((entry, index) => `
-          <tr class="history-row" data-index="${index}">
-            <td>${entry.date}</td>
-            <td class="entry-name">${entry.location}</td>
-            <td>${entry.note ? entry.note : '—'}</td>
-            <td><span class="type-badge ${badgeClasses[entry.type] || 'badge-snack'}">${entry.type}</span></td>
-            <td class="entry-amount">${entry.amount === 0 ? 'Swipe' : formatCurrency(entry.amount)}</td>
-            <td>
-              <button class="edit-btn" data-index="${index}">Edit</button>
-              <button class="del-btn" data-index="${index}">Remove</button>
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  `;
+  if (state.sortByWeek) {
+    // Group entries by week
+    const entriesByWeek = {};
+    state.entries.forEach((entry, index) => {
+      const date = new Date(entry.date);
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay()); // Start of week (Sunday)
+      const weekKey = weekStart.toISOString().split('T')[0];
+      
+      if (!entriesByWeek[weekKey]) {
+        entriesByWeek[weekKey] = [];
+      }
+      entriesByWeek[weekKey].push({ ...entry, originalIndex: index });
+    });
+
+    // Sort weeks in descending order (most recent first)
+    const sortedWeeks = Object.keys(entriesByWeek).sort((a, b) => new Date(b) - new Date(a));
+
+    UI.historyContent.innerHTML = sortedWeeks.map(weekKey => {
+      const weekEntries = entriesByWeek[weekKey];
+      const weekStart = new Date(weekKey);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      
+      const weekTotal = weekEntries.reduce((sum, entry) => sum + entry.amount, 0);
+      const weekRange = `${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`;
+      
+      return `
+        <div class="week-group">
+          <div class="week-header">
+            <span class="week-title">${weekRange}</span>
+            <span class="week-total">${formatCurrency(weekTotal)}</span>
+          </div>
+          <table class="entry-table">
+            <thead>
+              <tr><th>Date</th><th>Location</th><th>Note</th><th>Type</th><th>Amount</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+              ${weekEntries.map(entry => `
+                <tr class="history-row" data-index="${entry.originalIndex}">
+                  <td data-label="Date">${entry.date}</td>
+                  <td class="entry-name" data-label="Location">${entry.location}</td>
+                  <td data-label="Note">${entry.note ? entry.note : '—'}</td>
+                  <td data-label="Type"><span class="type-badge ${badgeClasses[entry.type] || 'badge-snack'}">${entry.type}</span></td>
+                  <td class="entry-amount" data-label="Amount">${entry.amount === 0 ? 'Swipe' : formatCurrency(entry.amount)}</td>
+                  <td data-label="Actions">
+                    <button class="edit-btn" data-index="${entry.originalIndex}">Edit</button>
+                    <button class="del-btn" data-index="${entry.originalIndex}">Remove</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }).join('');
+  } else {
+    // Default chronological view
+    UI.historyContent.innerHTML = `
+      <table class="entry-table">
+        <thead>
+          <tr><th>Date</th><th>Location</th><th>Note</th><th>Type</th><th>Amount</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          ${state.entries.map((entry, index) => `
+            <tr class="history-row" data-index="${index}">
+              <td data-label="Date">${entry.date}</td>
+              <td class="entry-name" data-label="Location">${entry.location}</td>
+              <td data-label="Note">${entry.note ? entry.note : '—'}</td>
+              <td data-label="Type"><span class="type-badge ${badgeClasses[entry.type] || 'badge-snack'}">${entry.type}</span></td>
+              <td class="entry-amount" data-label="Amount">${entry.amount === 0 ? 'Swipe' : formatCurrency(entry.amount)}</td>
+              <td data-label="Actions">
+                <button class="edit-btn" data-index="${index}">Edit</button>
+                <button class="del-btn" data-index="${index}">Remove</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+}
+
+function toggleSortByWeek() {
+  state.sortByWeek = !state.sortByWeek;
+  UI.sortWeekBtn.textContent = state.sortByWeek ? 'Sort Chronologically' : 'Sort by Week';
+  renderHistory();
+  saveUserState(currentUser, state);
 }
 
 function deleteEntry(index) {
-  if (!confirm('Are you sure you want to remove this entry?')) return;
 
   const entry = state.entries[index];
   if (entry && entry.amount === 0 && !state.isUnlimited) {

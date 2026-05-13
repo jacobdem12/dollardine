@@ -134,6 +134,17 @@ function initUI() {
   UI.logDate.value = getTodayISO();
 }
 
+// Add this to app.js
+function toggleMobileNav() {
+  document.getElementById('mobile-nav').classList.toggle('active');
+}
+
+// Helper to make buttons work
+function navTo(viewName) {
+  toggleMobileNav(); // Close menu after clicking
+  showView(viewName); // Call your existing view switcher
+}
+
 function onSetupSchoolChange(event) {
   state.school = event.target.value;
   applySetupBranding();

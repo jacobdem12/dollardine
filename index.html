@@ -67,20 +67,28 @@
 
 <div id="page-main" class="page">
   <div class="top-bar">
-    <div class="top-bar-left">
+    <div class="top-bar-left mobile-menu-trigger" onclick="toggleMobileNav()" id="mobile-menu-btn">
       <div class="school-badge" id="main-badge" style="background:#cc0000; width:28px; height:28px; font-size:12px; border-radius:6px;">NC</div>
       <div>
         <div class="top-bar-title">Dining Dollars</div>
         <div class="top-bar-sub" id="main-school-sub">NC State University</div>
       </div>
     </div>
-    <div class="top-nav">
+    <div class="top-nav" id="desktop-nav">
       <button class="nav-pill active" data-view="dashboard">Dashboard</button>
       <button class="nav-pill" data-view="log">Log meal</button>
       <button class="nav-pill" data-view="history">History</button>
       <button class="nav-pill" data-view="edit">Settings</button>
       <button id="logout-main-btn" class="nav-pill" style="margin-left: auto;">Logout</button>
     </div>
+  </div>
+
+  <div id="mobile-nav" class="mobile-nav">
+    <button class="mobile-nav-item" data-view="dashboard" onclick="navTo('dashboard');">Dashboard</button>
+    <button class="mobile-nav-item" data-view="log" onclick="navTo('log');">Log meal</button>
+    <button class="mobile-nav-item" data-view="history" onclick="navTo('history');">History</button>
+    <button class="mobile-nav-item" data-view="edit" onclick="navTo('edit');">Settings</button>
+    <button class="mobile-nav-item" id="logout-mobile-btn" onclick="handleLogout();">Logout</button>
   </div>
 
   <div id="view-dashboard" class="view active">
@@ -102,7 +110,7 @@
         </div>
       </div>
 
-      <div id="swipe-status" style="margin-bottom: 1.5rem; text-align: center;">
+      <div id="swipe-status" class="mobile-swipes" style="margin-bottom: 1.5rem; text-align: center;">
         <div class="stat-lbl" style="margin-bottom: 4px;">Meal Swipes</div>
         <div id="dash-swipes-large" style="font-size: 26px; font-weight: 700; color: var(--green); font-family: 'Nunito', sans-serif;">0</div>
       </div>
@@ -114,7 +122,7 @@
         <button class="dash-action-btn" data-view="history">
           <span class="action-icon">≡</span> View history
         </button>
-        <button class="dash-action-btn" data-view="edit">
+        <button class="dash-action-btn desktop-only" data-view="edit">
           <span class="action-icon">⚙</span> Edit settings
         </button>
       </div>

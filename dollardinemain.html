@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dining Dollars Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #1a1a1a; --bg2: #222222; --bg3: #2a2a2a; --bg4: #323232;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+    --text: #f0ede8; --text2: #9a9490; --text3: #6a6460;
+    --green: #4ade80; --green-dim: rgba(74,222,128,0.12);
+    --red: #f87171; --red-dim: rgba(248,113,113,0.12);
+    --amber: #fbbf24; --accent: #e8c97a; --accent-dim: rgba(232,201,122,0.1);
+    --wolf-red: #cc0000;
+  }
+  html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+  .page { display: none; width: 100%; min-height: 100vh; }
+  .page.active { display: flex; }
+
+  /* SETUP */
+  #page-setup { align-items: center; justify-content: center; padding: 2rem; }
+  .setup-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 2.5rem; width: 100%; max-width: 420px; }
+  .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; }
+  .school-badge { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; letter-spacing: -0.5px; flex-shrink: 0; }
+  .logo-text { font-size: 15px; font-weight: 600; }
+  .logo-sub { font-size: 11px; color: var(--text3); letter-spacing: 0.05em; text-transform: uppercase; }
+  .setup-title { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+  .setup-sub { font-size: 13px; color: var(--text2); margin-bottom: 1.5rem; }
+  label { display: block; font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; margin-top: 16px; }
+  input[type=number], input[type=text], select { width: 100%; background: var(--bg3); border: 1px solid var(--border2); border-radius: 10px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 11px 14px; outline: none; transition: border-color 0.15s; }
+  input[type=date] { width: 100%; background: var(--bg3); border: 1px solid var(--border2); border-radius: 10px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 11px 14px; outline: none; transition: border-color 0.15s; color-scheme: dark; }
+  input:focus, select:focus { border-color: var(--accent); }
+  select option { background: var(--bg3); }
+
+  /* SCHOOL SELECTOR */
+  .school-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+  .school-btn { padding: 12px 8px; border-radius: 10px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; text-align: center; transition: all 0.15s; }
+  .school-btn:hover { border-color: var(--border2); color: var(--text); }
+  .school-btn.selected { border-color: rgba(232,201,122,0.4); background: var(--accent-dim); color: var(--accent); }
+  .school-btn .school-abbr { font-size: 16px; font-weight: 700; display: block; margin-bottom: 3px; }
+
+  .btn { display: block; width: 100%; padding: 13px; border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s; margin-top: 12px; }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--accent); color: #1a1400; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--text2); }
+  .btn-ghost:hover { background: var(--bg3); color: var(--text); }
+  .btn-danger { background: transparent; border: 1px solid rgba(248,113,113,0.3); color: var(--red); }
+  .btn-danger:hover { background: var(--red-dim); }
+
+  /* MAIN */
+  #page-main { flex-direction: column; min-height: 100vh; }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; border-bottom: 1px solid var(--border); background: var(--bg2); flex-shrink: 0; }
+  .top-bar-left { display: flex; align-items: center; gap: 10px; }
+  .top-bar-title { font-size: 14px; font-weight: 600; }
+  .top-bar-sub { font-size: 11px; color: var(--text3); }
+  .top-nav { display: flex; gap: 4px; }
+  .nav-pill { padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; background: transparent; color: var(--text2); font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+  .nav-pill:hover { background: var(--bg3); color: var(--text); }
+  .nav-pill.active { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+  .view { display: none; flex: 1; }
+  .view.active { display: flex; }
+
+  /* DASHBOARD */
+  #view-dashboard { flex-direction: row; }
+  .dash-left { width: 300px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; gap: 1.5rem; }
+  .dash-right { flex: 1; padding: 2rem 2.5rem; display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto; }
+
+  /* RING — single track, green shrinks from right, red fills from left */
+  #ring-wrap { position: relative; width: 220px; height: 220px; flex-shrink: 0; }
+  #ring-wrap svg { width: 100%; height: 100%; display: block; }
+  #ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  #ring-amount { font-size: 30px; font-weight: 700; font-family: 'Nunito', sans-serif; line-height: 1; color: var(--text); }
+  #ring-label-sub { font-size: 11px; color: var(--text3); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+  #ring-spent-label { font-size: 12px; color: var(--red); margin-top: 6px; font-family: 'Nunito', sans-serif; }
+
+  /* STATS */
+  .stat-section-title { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .stat-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .stat-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .stat-val { font-size: 18px; font-weight: 600; font-family: 'Nunito', sans-serif; color: var(--text); }
+  .projection { border-radius: 12px; padding: 14px 16px; font-size: 13px; line-height: 1.6; }
+  .proj-green { background: var(--green-dim); border: 1px solid rgba(74,222,128,0.2); }
+  .proj-red { background: var(--red-dim); border: 1px solid rgba(248,113,113,0.2); }
+  .proj-tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .tag-green { background: rgba(74,222,128,0.2); color: var(--green); }
+  .tag-red { background: rgba(248,113,113,0.2); color: var(--red); }
+  .proj-text { color: var(--text2); }
+  .proj-text strong { color: var(--text); }
+  .dash-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  .dash-action-btn { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 10px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; text-align: left; transition: all 0.15s; }
+  .dash-action-btn:hover { background: var(--bg4); border-color: var(--border2); color: var(--text); }
+  .dash-action-btn.primary-action { background: var(--accent-dim); border-color: rgba(232,201,122,0.25); color: var(--accent); }
+  .dash-action-btn.primary-action:hover { background: rgba(232,201,122,0.18); }
+  .action-icon { font-size: 16px; opacity: 0.8; }
+
+  /* LOG VIEW */
+  #view-log { flex-direction: row; }
+  .log-left { width: 300px; flex-shrink: 0; border-right: 1px solid var(--border); padding: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; background: var(--bg2); overflow-y: auto; }
+  .log-right { flex: 1; padding: 2rem 2.5rem; display: flex; flex-direction: column; gap: 1rem; max-width: 560px; overflow-y: auto; }
+  .view-title { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  .view-sub { font-size: 13px; color: var(--text2); }
+  .loc-section-label { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 0 4px 0; display: block; }
+  .location-btn { display: block; width: 100%; text-align: left; padding: 8px 10px; border-radius: 8px; background: transparent; border: 1px solid transparent; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.12s; margin-bottom: 1px; }
+  .location-btn:hover { background: var(--bg3); color: var(--text); }
+  .location-btn.selected { background: var(--accent-dim); border-color: rgba(232,201,122,0.3); color: var(--accent); }
+  .loc-name { font-weight: 500; }
+  .loc-hint { font-size: 11px; opacity: 0.55; margin-left: 4px; }
+  .meal-type-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .meal-type-btn { padding: 9px 4px; border-radius: 8px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; text-align: center; transition: all 0.12s; }
+  .meal-type-btn:hover { background: var(--bg4); color: var(--text); }
+  .meal-type-btn.selected { background: var(--accent-dim); border-color: rgba(232,201,122,0.3); color: var(--accent); }
+  .amount-preview { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; font-family: 'Nunito', sans-serif; font-size: 22px; font-weight: 600; color: var(--accent); text-align: center; }
+
+  /* HISTORY */
+  #view-history { flex-direction: column; padding: 2rem 2.5rem; overflow-y: auto; }
+  .history-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .entry-table { width: 100%; border-collapse: collapse; }
+  .entry-table th { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; padding: 0 12px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+  .entry-table td { padding: 12px 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text2); }
+  .entry-table tr:hover td { background: var(--bg2); }
+  .entry-table .entry-name { color: var(--text); font-weight: 500; }
+  .entry-table .entry-amount { font-family: 'Nunito', sans-serif; color: var(--text); font-weight: 600; }
+  .type-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 500; text-transform: capitalize; }
+  .badge-breakfast { background: rgba(251,191,36,0.15); color: var(--amber); }
+  .badge-lunch { background: rgba(74,222,128,0.12); color: var(--green); }
+  .badge-dinner { background: rgba(232,201,122,0.12); color: var(--accent); }
+  .badge-snack { background: rgba(255,255,255,0.06); color: var(--text2); }
+  .del-btn { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 13px; padding: 4px 8px; border-radius: 6px; font-family: 'DM Sans', sans-serif; transition: all 0.12s; }
+  .del-btn:hover { background: var(--red-dim); color: var(--red); }
+
+  /* SETTINGS */
+  #view-edit { flex-direction: column; padding: 2rem 2.5rem; max-width: 440px; gap: 1rem; }
+  .divider { border: none; border-top: 1px solid var(--border); }
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text3); font-size: 13px; }
+  .scroll-y { overflow-y: auto; }
+  .location-section { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<!-- SETUP PAGE -->
+<div id="page-setup" class="page active">
+  <div class="setup-box">
+    <div class="logo-row">
+      <div class="school-badge" id="setup-badge" style="background:#cc0000;">NC</div>
+      <div>
+        <div class="logo-text" id="setup-school-name">NC State University</div>
+        <div class="logo-sub">Dining Dollars Tracker</div>
+      </div>
+    </div>
+    <p class="setup-title">Set up your tracker</p>
+    <p class="setup-sub">Choose your school, enter your balance, and how many days are left in your semester.</p>
+
+    <label>Your school</label>
+<select id="setup-school-dropdown" onchange="updateSetupBrandingDropdown(this)">
+    <option value="ncstate">NC State University</option>
+    <option value="rit">Rochester Institute of Technology</option>
+    <option value="uncw">UNC Wilmington</option>
+    <option value="uncc">UNC Charlotte</option>
+    <option value="uncch">UNC Chapel Hill</option>
+</select>
+
+<script>
+function updateSetupBrandingDropdown(select) {
+    const key = select.value;
+    const sc = SCHOOLS[key];
+    document.getElementById('setup-badge').textContent = sc.abbr;
+    document.getElementById('setup-badge').style.background = sc.color;
+    document.getElementById('setup-school-name').textContent = sc.name;
+    state.school = key;
+}
+</script>
+
+    <label for="setup-balance">Starting balance ($)</label>
+    <input type="number" id="setup-balance" placeholder="e.g. 1200.00" min="0" step="0.01">
+    <label for="setup-days">Days remaining in semester</label>
+    <input type="number" id="setup-days" placeholder="e.g. 90" min="1" step="1">
+    <label for="setup-swipes">Starting meal swipes</label>
+    <input type="text" id="setup-swipes" placeholder="Enter amount or 'Unlimited'" min="0">
+    <button class="btn btn-primary" onclick="startTracking()">Get started →</button>
+  </div>
+</div>
+
+<!-- MAIN PAGE -->
+<div id="page-main" class="page">
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="school-badge" id="main-badge" style="background:#cc0000; width:28px; height:28px; font-size:12px; border-radius:6px;">NC</div>
+      <div>
+        <div class="top-bar-title" id="main-school-name">Dining Dollars</div>
+        <div class="top-bar-sub" id="main-school-sub">NC State University</div>
+      </div>
+    </div>
+    <div class="top-nav">
+      <button class="nav-pill active" onclick="showView('dashboard', this)">Dashboard</button>
+      <button class="nav-pill" onclick="showView('log', this)">Log meal</button>
+      <button class="nav-pill" onclick="showView('history', this)">History</button>
+      <button class="nav-pill" onclick="showView('edit', this)">Settings</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="view-dashboard" class="view active">
+  <div class="dash-left">
+    <div id="swipe-status" style="margin-bottom: 1.5rem; text-align: center;">
+      <div class="stat-lbl" style="margin-bottom: 4px;">Meal Swipes</div>
+      <div id="dash-swipes-large" style="font-size: 26px; font-weight: 700; color: var(--green); font-family: 'Nunito', sans-serif;">0</div>
+    </div>
+
+    <div id="ring-wrap">
+      <svg viewBox="0 0 220 220" aria-label="Dining balance ring">
+        <circle cx="110" cy="110" r="88" fill="none" stroke="#2a2a2a" stroke-width="22"/>
+        <circle id="ring-remain-arc" cx="110" cy="110" r="88" fill="none" stroke="#4ade80" stroke-width="22"
+          stroke-linecap="butt" stroke-dasharray="552.92" stroke-dashoffset="0"
+          transform="rotate(-90 110 110)"/>
+        <circle id="ring-spent-arc" cx="110" cy="110" r="88" fill="none" stroke="#f87171" stroke-width="22"
+          stroke-linecap="butt" stroke-dasharray="552.92" stroke-dashoffset="552.92"
+          transform="rotate(-90 110 110)"/>
+      </svg>
+      <div id="ring-center">
+        <div id="ring-amount">$0.00</div>
+        <div id="ring-label-sub">remaining</div>
+        <div id="ring-spent-label">spent $0.00</div>
+      </div>
+    </div>
+
+    <div class="dash-actions">
+      <button class="dash-action-btn primary-action" onclick="showView('log', document.querySelectorAll('.nav-pill')[1])">
+        <span class="action-icon">＋</span> Log a meal
+      </button>
+      <button class="dash-action-btn" onclick="showView('history', document.querySelectorAll('.nav-pill')[2])">
+        <span class="action-icon">≡</span> View history
+      </button>
+      <button class="dash-action-btn" onclick="showView('edit', document.querySelectorAll('.nav-pill')[3])">
+        <span class="action-icon">⚙</span> Edit settings
+      </button>
+    </div>
+  </div>
+
+  <div class="dash-right scroll-y">
+    <div>
+      <div class="stat-section-title">Overview</div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-lbl">Spent so far</div><div class="stat-val" id="stat-spent">$0.00</div></div>
+        <div class="stat-card"><div class="stat-lbl">Days left</div><div class="stat-val" id="stat-days">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">Avg / day</div><div class="stat-val" id="stat-daily-avg">$0.00</div></div>
+        <div class="stat-card"><div class="stat-lbl">Budget / day</div><div class="stat-val" id="stat-suggested">$0.00</div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="stat-section-title">Average by meal type</div>
+      <div class="stat-grid stat-grid-4">
+        <div class="stat-card"><div class="stat-lbl">Breakfast</div><div class="stat-val" id="avg-breakfast">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">Lunch</div><div class="stat-val" id="avg-lunch">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">Dinner</div><div class="stat-val" id="avg-dinner">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">Snacks</div><div class="stat-val" id="avg-snacks">—</div></div>
+      </div>
+    </div>
+
+    <div id="projection-wrap" style="display:none;">
+      <div class="stat-section-title">Projection</div>
+      <div id="projection-banner" class="projection"></div>
+    </div>
+  </div>
+</div>
+
+  <!-- LOG MEAL -->
+  <div id="view-log" class="view">
+    <div class="log-left">
+      <div class="view-title" style="font-size:15px;">Locations</div>
+      <div id="location-list"><!-- filled by JS --></div>
+    </div>
+    <div class="log-right">
+      <div>
+        <div class="view-title">Meal details</div>
+        <div class="view-sub">Select a location, pick meal type, then save.</div>
+      </div>
+      <div>
+        <label>Selected location</label>
+        <input type="text" id="log-location" placeholder="Select a location on the left" readonly style="cursor:default; color:var(--text2);">
+      </div>
+      <div>
+        <label>Meal type</label>
+        <div class="meal-type-row">
+          <button class="meal-type-btn selected" data-type="breakfast" onclick="selectMealType(this)">Breakfast</button>
+          <button class="meal-type-btn" data-type="lunch" onclick="selectMealType(this)">Lunch</button>
+          <button class="meal-type-btn" data-type="dinner" onclick="selectMealType(this)">Dinner</button>
+          <button class="meal-type-btn" data-type="snack" onclick="selectMealType(this)">Snack</button>
+        </div>
+      </div>
+      <div>
+        <label>Amount ($)</label>
+        <div class="amount-preview" id="amount-preview">—</div>
+        <input type="number" id="log-amount" placeholder="Enter or adjust amount" min="0" step="0.01" style="margin-top:8px;" oninput="updateAmountPreview()">
+      </div>
+      <div>
+        <label>Date of purchase</label>
+        <input type="date" id="log-date">
+      </div>
+      <div>
+        <label>Note (optional)</label>
+        <input type="text" id="log-note" placeholder="e.g. added coffee, extra items">
+      </div>
+      <button class="btn btn-primary" onclick="logMeal()">Save entry →</button>
+      <button class="btn btn-ghost" onclick="showView('dashboard', document.querySelectorAll('.nav-pill')[0])">Back to dashboard</button>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="view-history" class="view scroll-y" style="flex-direction:column; padding:2rem 2.5rem;">
+    <div class="history-header">
+      <div>
+        <div class="view-title">History</div>
+        <div class="view-sub">All logged meals and purchases</div>
+      </div>
+      <button class="btn btn-danger" style="width:auto; padding:9px 16px; margin-top:0;" onclick="resetAll()">Reset all data</button>
+    </div>
+    <div id="history-content"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="view-edit" class="view">
+  <div style="padding:2rem 2.5rem; max-width:440px; display:flex; flex-direction:column; gap:1rem; width:100%;">
+    <div><div class="view-title">Settings</div><div class="view-sub">Update your school, balance, or swipes.</div></div>
+    <hr class="divider">
+    
+    <label>Change School</label>
+    <select id="edit-school-dropdown" onchange="state.school = this.value">
+      <option value="ncstate">NC State University</option>
+      <option value="rit">Rochester Institute of Technology</option>
+      <option value="uncw">UNC Wilmington</option>
+      <option value="uncc">UNC Charlotte</option>
+      <option value="uncch">UNC Chapel Hill</option>
+    </select>
+
+    <label for="edit-balance">Starting balance ($)</label>
+    <input type="number" id="edit-balance" step="0.01">
+    
+    <label for="edit-days">Days remaining</label>
+    <input type="number" id="edit-days">
+
+    <label for="edit-swipes">Meal Swipes (or 'Unlimited')</label>
+    <input type="text" id="edit-swipes">
+
+    <button class="btn btn-primary" onclick="saveMainData()">Save changes →</button>
+    <button class="btn btn-ghost" onclick="showView('dashboard', document.querySelectorAll('.nav-pill')[0])">Cancel</button>
+  </div>
+</div>
+
+<script>
+  // ── STATE ──
+  let state = { school: 'ncstate', balance: 0, daysLeft: 0, swipes: 0, isUnlimited: false, entries: [] };
+  const CIRC = 2 * Math.PI * 88;
+  let selectedMealType = 'breakfast';
+  let selectedLocationBtn = null;
+
+  // ── SCHOOL DATA (Comprehensive & Fixed) ──
+  const SCHOOLS = {
+    ncstate: {
+      name: 'NC State University', abbr: 'NCSU', color: '#cc0000',
+      sections: [
+        { label: 'Dining Halls', locs: [
+          { name: 'Fountain Dining Hall',   b:9.00,  l:12.00, d:12.00, s:5.00, isDH: true },
+          { name: 'Clark Dining Hall',      b:9.00,  l:12.00, d:12.00, s:5.00, isDH: true },
+          { name: 'Case Dining Hall',       b:9.00,  l:12.00, d:12.00, s:5.00, isDH: true },
+        ]},
+        { label: 'Talley & Student Union', locs: [
+          { name: 'Chick-fil-A',            b:6.50,  l:9.00,  d:9.00,  s:4.00 },
+          { name: 'Panda Express',          b:0,     l:10.50, d:11.50, s:5.00 },
+          { name: 'Tuffy’s Diner',          b:8.00,  l:11.00, d:11.00, s:5.00 },
+          { name: 'Los Lobos',              b:0,     l:10.00, d:10.00, s:4.00 },
+        ]},
+        { label: 'Campus Cafes', locs: [
+          { name: 'On the Oval',            b:8.50,  l:11.50, d:11.50, s:5.00 },
+          { name: 'Port City Java',         b:5.50,  l:7.00,  d:7.00,  s:5.00 },
+          { name: 'Other / Manual',         b:0,     l:0,     d:0,     s:0    },
+        ]}
+      ]
+    },
+    rit: {
+      name: 'Rochester Institute of Technology', abbr: 'RIT', color: '#f36e21',
+      sections: [
+        { label: 'Dining Halls', locs: [
+          { name: "Gracie's",               b:9.50,  l:12.50, d:14.50, s:5.00, isDH: true },
+          { name: 'The Commons',            b:9.00,  l:11.50, d:13.50, s:4.50, isDH: true },
+        ]},
+        { label: 'Quick Bites & Cafes', locs: [
+          { name: 'Crossroads',             b:8.50,  l:11.00, d:12.00, s:5.00 },
+          { name: 'RITZ Sports Zone',       b:0,     l:10.50, d:11.50, s:5.00 },
+          { name: 'Artesano Bakery',        b:6.00,  l:9.00,  d:9.00,  s:5.00 },
+          { name: 'Other / Manual',         b:0,     l:0,     d:0,     s:0    },
+        ]}
+      ]
+    },
+    uncw: {
+      name: 'UNC Wilmington', abbr: 'UNCW', color: '#006666',
+      sections: [
+        { label: 'Dining Halls', locs: [
+          { name: 'Wagoner Hall',           b:9.50,  l:12.00, d:13.00, s:5.00, isDH: true },
+          { name: 'The Shore Dining Hall',  b:9.50,  l:12.00, d:13.00, s:5.00, isDH: true },
+          { name: "Dub's Café",             b:9.00,  l:11.50, d:11.50, s:4.50, isDH: true },
+        ]},
+        { label: 'Retail', locs: [
+          { name: 'Chick-fil-A',            b:6.50,  l:9.50,  d:9.50,  s:4.50 },
+          { name: "Hawk's Nest",            b:8.50,  l:11.00, d:11.00, s:4.50 },
+          { name: 'Other / Manual',         b:0,     l:0,     d:0,     s:0    },
+        ]}
+      ]
+    },
+    uncc: {
+      name: 'UNC Charlotte', abbr: 'CLT', color: '#005035',
+      sections: [
+        { label: 'Dining Halls', locs: [
+          { name: 'SoVi Dining',            b:9.00,  l:11.50, d:12.50, s:5.00, isDH: true },
+          { name: 'Crown Commons',          b:9.00,  l:11.50, d:12.50, s:5.00, isDH: true },
+        ]},
+        { label: 'Student Union', locs: [
+          { name: 'Chick-fil-A',            b:6.50,  l:9.00,  d:9.00,  s:4.00 },
+          { name: 'Panda Express',          b:0,     l:11.00, d:12.00, s:5.00 },
+          { name: 'Other / Manual',         b:0,     l:0,     d:0,     s:0    },
+        ]}
+      ]
+    },
+    uncch: {
+      name: 'UNC Chapel Hill', abbr: 'UNC', color: '#7BAFD4',
+      sections: [
+        { label: 'Dining Halls', locs: [
+          { name: 'Chase Dining Hall',      b:10.00, l:13.50, d:15.00, s:6.00, isDH: true },
+          { name: 'Top of Lenoir',          b:10.00, l:13.50, d:15.00, s:6.00, isDH: true },
+        ]},
+        { label: 'Retail', locs: [
+          { name: 'Alpine Bagel',           b:6.50,  l:9.50,  d:9.50,  s:4.50 },
+          { name: 'Med Deli',               b:0,     l:12.00, d:13.00, s:5.50 },
+          { name: 'Other / Manual',         b:0,     l:0,     d:0,     s:0    },
+        ]}
+      ]
+    }
+  };
+
+  // ── BUILD LOCATION LIST ──
+  function buildLocationList() {
+    const sc = SCHOOLS[state.school];
+    const container = document.getElementById('location-list');
+    container.innerHTML = sc.sections.map(section => `
+      <div class="location-section">
+        <span class="loc-section-label">${section.label}</span>
+        ${section.locs.map(loc => `
+          <button class="location-btn"
+            data-name="${loc.name}"
+            data-b="${loc.b}" data-l="${loc.l}" data-d="${loc.d}" data-s="${loc.s}"
+            data-dh="${loc.isDH || false}"
+            onclick="selectLocation(this)">
+            <span class="loc-name">${loc.name}</span>
+          </button>
+        `).join('')}
+      </div>
+    `).join('');
+    selectedLocationBtn = null;
+    clearLogFields();
+  }
+
+  function clearLogFields() {
+    document.getElementById('log-location').value = '';
+    document.getElementById('log-amount').value = '';
+    document.getElementById('amount-preview').textContent = '—';
+    // Remove any existing swipe buttons from previous selections
+    const oldSwipeBtn = document.getElementById('swipe-action-btn');
+    if (oldSwipeBtn) oldSwipeBtn.remove();
+  }
+
+  // Clears and wipes storage then reloads page
+  function resetAll() {
+    if (!confirm('This will permanently delete all your settings and history. Continue?')) return;
+    localStorage.removeItem('diningState');
+    location.reload(); 
+  }
+
+
+
+  // ── SELECT LOCATION & SHOW SWIPE BUTTON ──
+  function selectLocation(btn) {
+    document.querySelectorAll('.location-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedLocationBtn = btn;
+    document.getElementById('log-location').value = btn.getAttribute('data-name');
+    
+    // Add/Remove Swipe Button based on if it's a Dining Hall
+    const isDiningHall = btn.getAttribute('data-dh') === 'true';
+    const actionContainer = document.querySelector('.log-right');
+    let swipeBtn = document.getElementById('swipe-action-btn');
+
+    if (isDiningHall) {
+      if (!swipeBtn) {
+        swipeBtn = document.createElement('button');
+        swipeBtn.id = 'swipe-action-btn';
+        swipeBtn.className = 'btn btn-primary';
+        swipeBtn.style.background = '#4ade80';
+        swipeBtn.style.color = '#1a1a1a';
+        swipeBtn.textContent = 'Use 1 Swipe instead →';
+        swipeBtn.onclick = useSwipe;
+        // Insert it before the "Back to Dashboard" button
+        actionContainer.insertBefore(swipeBtn, actionContainer.lastElementChild);
+      }
+    } else if (swipeBtn) {
+      swipeBtn.remove();
+    }
+
+    applyMealPrice();
+  }
+
+  function useSwipe() {
+    if (!state.isUnlimited && state.swipes <= 0) {
+      alert("No swipes remaining!");
+      return;
+    }
+    const locName = document.getElementById('log-location').value;
+    const rawDate = document.getElementById('log-date').value;
+    
+    if (!state.isUnlimited) state.swipes -= 1;
+    
+    state.entries.push({ 
+      type: selectedMealType, 
+      location: locName, 
+      amount: 0, 
+      note: 'Used Swipe', 
+      date: new Date(rawDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), 
+      sortKey: rawDate 
+    });
+    
+    save();
+    showView('dashboard', document.querySelectorAll('.nav-pill')[0]);
+  }
+
+  // ── DASHBOARD UPDATE (Includes Swipes) ──
+  function updateDashboard() {
+    const spent = state.entries.reduce((s, e) => s + e.amount, 0);
+    const remaining = Math.max(state.balance - spent, 0);
+    
+    // Fix: Calculate percentages correctly based on total starting balance
+    const spentPct = state.balance > 0 ? Math.min(spent / state.balance, 1) : 0;
+    const remainPct = 1 - spentPct;
+
+    // UI Updates
+    document.getElementById('ring-amount').textContent = '$' + remaining.toFixed(2);
+    document.getElementById('ring-spent-label').textContent = 'spent $' + spent.toFixed(2);
+    
+    // Fix Ring: Green (remaining) shrinks from the right, Red (spent) grows from the left
+    document.getElementById('ring-remain-arc').setAttribute('stroke-dashoffset', (CIRC * spentPct).toFixed(2));
+    document.getElementById('ring-spent-arc').setAttribute('stroke-dashoffset', (CIRC * remainPct).toFixed(2));
+
+    // Update Swipe Counter above the ring
+    document.getElementById('dash-swipes-large').textContent = state.isUnlimited ? "Unlimited" : state.swipes;
+
+    // Statistics Section
+    const suggested = state.daysLeft > 0 ? remaining / state.daysLeft : 0;
+    const uniqueDays = state.entries.length > 0 ? new Set(state.entries.map(e => e.sortKey)).size : 0;
+    const dailyAvg = uniqueDays > 0 ? spent / uniqueDays : 0;
+
+    document.getElementById('stat-spent').textContent = '$' + spent.toFixed(2);
+    document.getElementById('stat-days').textContent = state.daysLeft;
+    document.getElementById('stat-daily-avg').textContent = '$' + dailyAvg.toFixed(2);
+    
+    // Restore: Budget / day of dollars
+    document.getElementById('stat-suggested').textContent = '$' + suggested.toFixed(2);
+
+    // Meal Type Averages
+    ['breakfast','lunch','dinner','snack'].forEach(t => {
+      const es = state.entries.filter(e => e.type === t && e.amount > 0);
+      const avg = es.length > 0 ? es.reduce((s, e) => s + e.amount, 0) / es.length : null;
+      document.getElementById(t === 'snack' ? 'avg-snacks' : 'avg-' + t).textContent = avg !== null ? '$' + avg.toFixed(2) : '—';
+    });
+  }
+
+  function logMeal() {
+    const location = document.getElementById('log-location').value.trim();
+    const amount = parseFloat(document.getElementById('log-amount').value);
+    const note = document.getElementById('log-note').value.trim();
+    const rawDate = document.getElementById('log-date').value;
+
+    if (!location || isNaN(amount) || !rawDate) {
+      alert('Please fill out location, amount, and date.');
+      return;
+    }
+
+    const [y, m, d] = rawDate.split('-').map(Number);
+    const displayDate = new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    state.entries.push({ 
+      type: selectedMealType, 
+      location, 
+      amount, 
+      note, 
+      date: displayDate, 
+      sortKey: rawDate 
+    });
+    
+    state.entries.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+    save();
+    showView('dashboard', document.querySelectorAll('.nav-pill')[0]);
+  }
+
+  function useSwipe() {
+    if (!state.isUnlimited && state.swipes <= 0) {
+      alert("No swipes remaining!");
+      return;
+    }
+    
+    const location = document.getElementById('log-location').value;
+    const rawDate = document.getElementById('log-date').value;
+    if (!rawDate) { alert('Please select a date.'); return; }
+
+    const [y, m, d] = rawDate.split('-').map(Number);
+    const displayDate = new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    if (!state.isUnlimited) state.swipes -= 1;
+    
+    state.entries.push({ 
+      type: selectedMealType, 
+      location: location, 
+      amount: 0, 
+      note: 'Used Swipe', 
+      date: displayDate, 
+      sortKey: rawDate 
+    });
+    
+    state.entries.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+    save();
+    showView('dashboard', document.querySelectorAll('.nav-pill')[0]);
+  }
+  // ── SETTINGS SAVE (Dropdown Support) ──
+  function saveMainData() {
+    const bal = parseFloat(document.getElementById('edit-balance').value);
+    const days = parseInt(document.getElementById('edit-days').value, 10);
+    const swipeInput = document.getElementById('edit-swipes').value.trim().toLowerCase();
+    
+    state.school = document.getElementById('edit-school-dropdown').value;
+    state.balance = bal;
+    state.daysLeft = days;
+    
+    if (swipeInput === 'unlimited') {
+      state.isUnlimited = true;
+    } else {
+      state.isUnlimited = false;
+      state.swipes = parseInt(swipeInput) || 0;
+    }
+
+    save(); 
+    applySchoolBranding(); 
+    buildLocationList();
+    showView('dashboard', document.querySelectorAll('.nav-pill')[0]);
+  }
+
+  function renderHistory() {
+    const el = document.getElementById('history-content');
+    if (state.entries.length === 0) { 
+      el.innerHTML = '<div class="empty-state">No entries yet.</div>'; 
+      return; 
+    }
+    
+    const bc = { breakfast: 'badge-breakfast', lunch: 'badge-lunch', dinner: 'badge-dinner', snack: 'badge-snack' };
+    
+    el.innerHTML = `<table class="entry-table">
+      <thead><tr><th>Date</th><th>Location</th><th>Type</th><th>Amount</th><th>Action</th></tr></thead>
+      <tbody>${state.entries.map((e, i) => `<tr>
+        <td>${e.date}</td>
+        <td class="entry-name">${e.location}</td>
+        <td><span class="type-badge ${bc[e.type] || 'badge-snack'}">${e.type}</span></td>
+        <td class="entry-amount">${e.amount === 0 ? 'Swipe' : '$' + e.amount.toFixed(2)}</td>
+        <td><button class="del-btn" onclick="deleteEntry(${i})">Remove</button></td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  }
+
+  function deleteEntry(index) {
+    if (!confirm('Are you sure you want to remove this entry?')) return;
+    
+    const entry = state.entries[index];
+    // Refund the swipe if it was a swipe entry
+    if (entry.amount === 0 && !state.isUnlimited) {
+      state.swipes += 1;
+    }
+    
+    state.entries.splice(index, 1);
+    save();
+    renderHistory();
+    updateDashboard();
+  }
+
+  function renderEdit() {
+    document.getElementById('edit-school-dropdown').value = state.school;
+    document.getElementById('edit-balance').value = state.balance.toFixed(2);
+    document.getElementById('edit-days').value = state.daysLeft;
+    document.getElementById('edit-swipes').value = state.isUnlimited ? 'Unlimited' : (state.swipes || 0);
+  }
+
+  // ── CORE UTILS ──
+  function applyMealPrice() {
+    if (!selectedLocationBtn) return;
+    const map = { breakfast: 'b', lunch: 'l', dinner: 'd', snack: 's' };
+    const price = parseFloat(selectedLocationBtn.getAttribute('data-' + map[selectedMealType]) || '0');
+    document.getElementById('log-amount').value = price > 0 ? price.toFixed(2) : '';
+    document.getElementById('amount-preview').textContent = price > 0 ? '$' + price.toFixed(2) : '—';
+  }
+
+  function updateAmountPreview() {
+    const val = parseFloat(document.getElementById('log-amount').value);
+    document.getElementById('amount-preview').textContent = (!isNaN(val) && val > 0) ? '$' + val.toFixed(2) : '—';
+  }
+
+  function selectMealType(btn) {
+    document.querySelectorAll('.meal-type-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedMealType = btn.getAttribute('data-type');
+    applyMealPrice();
+  }
+
+  function showView(name, triggerBtn) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-pill').forEach(p => p.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    if (triggerBtn) triggerBtn.classList.add('active');
+    if (name === 'dashboard') updateDashboard();
+    if (name === 'history') renderHistory();
+    if (name === 'edit') renderEdit();
+    if (name === 'log') { buildLocationList(); setTodayDate(); }
+  }
+
+  function logMeal() {
+    const location = document.getElementById('log-location').value.trim();
+    const amount = parseFloat(document.getElementById('log-amount').value);
+    const rawDate = document.getElementById('log-date').value;
+    if (!location || isNaN(amount)) return;
+
+    state.entries.push({ 
+      type: selectedMealType, 
+      location, 
+      amount, 
+      note: document.getElementById('log-note').value, 
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), 
+      sortKey: rawDate 
+    });
+    save();
+    showView('dashboard', document.querySelectorAll('.nav-pill')[0]);
+  }
+
+  function setTodayDate() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('log-date').value = today;
+  }
+
+  function applySchoolBranding() {
+    const sc = SCHOOLS[state.school];
+    document.getElementById('main-badge').textContent = sc.abbr;
+    document.getElementById('main-badge').style.background = sc.color;
+    document.getElementById('main-school-sub').textContent = sc.name;
+  }
+
+  function save() { localStorage.setItem('diningState', JSON.stringify(state)); }
+  function load() {
+    const s = localStorage.getItem('diningState');
+    if (s) {
+        state = JSON.parse(s);
+        document.getElementById('page-setup').classList.remove('active');
+        document.getElementById('page-main').classList.add('active');
+        applySchoolBranding();
+        updateDashboard();
+    }
+  }
+
+function startTracking() {
+    const bal = parseFloat(document.getElementById('setup-balance').value);
+    const days = parseInt(document.getElementById('setup-days').value, 10);
+    const sVal = document.getElementById('setup-swipes').value.trim().toLowerCase();
+
+    if (isNaN(bal) || isNaN(days)) {
+      alert("Please enter a valid balance and days remaining.");
+      return;
+    }
+
+    state.balance = bal;
+    state.daysLeft = days;
+    
+    if (sVal === 'unlimited') {
+      state.isUnlimited = true;
+      state.swipes = 999; 
+    } else {
+      state.isUnlimited = false;
+      state.swipes = parseInt(sVal) || 0;
+    }
+
+    // Update the UI and transition pages
+    save();
+    applySchoolBranding();
+    document.getElementById('page-setup').classList.remove('active');
+    document.getElementById('page-main').classList.add('active');
+    showView('dashboard', document.querySelectorAll('.nav-pill')[0]);
+  }
+
+  load();
+</script>
+</body>
+</html>

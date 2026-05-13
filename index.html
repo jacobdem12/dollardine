@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dining Dollars Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<!-- AUTH PAGE -->
+<div id="page-auth" class="page active">
+  <div class="setup-box">
+    <div class="logo-row">
+      <div class="school-badge" style="background:#cc0000;">DD</div>
+      <div>
+        <div class="logo-text">Dining Dollars Tracker</div>
+        <div class="logo-sub">Sign in or create account</div>
+      </div>
+    </div>
+    <p class="setup-title">Welcome</p>
+    <p class="setup-sub">Sign in with your username and password.</p>
+
+    <label for="auth-username">Username</label>
+    <input type="text" id="auth-username" placeholder="Enter username">
+    <label for="auth-password">Password</label>
+    <input type="password" id="auth-password" placeholder="Enter password">
+    <button id="login-btn" class="btn btn-primary">Sign in</button>
+    <button id="signup-btn" class="btn btn-ghost">Sign up</button>
+    <div id="auth-message" style="color: var(--red); font-size: 13px; margin-top: 8px;"></div>
+  </div>
+</div>
+
+<!-- SETUP PAGE -->
+<div id="page-setup" class="page">
+  <div class="setup-box">
+    <div class="logo-row">
+      <div class="school-badge" id="setup-badge" style="background:#cc0000;">NC</div>
+      <div>
+        <div class="logo-text" id="setup-school-name">NC State University</div>
+        <div class="logo-sub">Dining Dollars Tracker</div>
+      </div>
+    </div>
+    <p class="setup-title">Set up your tracker</p>
+    <p class="setup-sub">Choose your school, enter your balance, and how many days are left in your semester.</p>
+
+    <label>Your school</label>
+    <select id="setup-school-dropdown">
+      <option value="ncstate">NC State University</option>
+      <option value="rit">Rochester Institute of Technology</option>
+      <option value="uncw">UNC Wilmington</option>
+      <option value="uncc">UNC Charlotte</option>
+      <option value="uncch">UNC Chapel Hill</option>
+    </select>
+
+    <label for="setup-balance">Starting balance ($)</label>
+    <input type="number" id="setup-balance" placeholder="e.g. 1200.00" min="0" step="0.01">
+    <label for="setup-days">Days remaining in semester</label>
+    <input type="number" id="setup-days" placeholder="e.g. 90" min="1" step="1">
+    <label for="setup-swipes">Starting meal swipes</label>
+    <input type="text" id="setup-swipes" placeholder="Enter amount or 'Unlimited'" min="0">
+    <button id="start-tracking-btn" class="btn btn-primary">Get started →</button>
+    <button id="logout-btn" class="btn btn-ghost" style="margin-top: 8px;">Logout</button>
+  </div>
+</div>
+
+<div id="page-main" class="page">
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="school-badge" id="main-badge" style="background:#cc0000; width:28px; height:28px; font-size:12px; border-radius:6px;">NC</div>
+      <div>
+        <div class="top-bar-title">Dining Dollars</div>
+        <div class="top-bar-sub" id="main-school-sub">NC State University</div>
+      </div>
+    </div>
+    <div class="top-nav">
+      <button class="nav-pill active" data-view="dashboard">Dashboard</button>
+      <button class="nav-pill" data-view="log">Log meal</button>
+      <button class="nav-pill" data-view="history">History</button>
+      <button class="nav-pill" data-view="edit">Settings</button>
+      <button id="logout-main-btn" class="nav-pill" style="margin-left: auto;">Logout</button>
+    </div>
+  </div>
+
+  <div id="view-dashboard" class="view active">
+    <div class="dash-left">
+      <div id="ring-wrap">
+        <svg viewBox="0 0 220 220" aria-label="Dining balance ring">
+          <circle cx="110" cy="110" r="88" fill="none" stroke="#2a2a2a" stroke-width="22"/>
+          <circle id="ring-remain-arc" cx="110" cy="110" r="88" fill="none" stroke="#4ade80" stroke-width="22"
+            stroke-linecap="butt" stroke-dasharray="552.92" stroke-dashoffset="0"
+            transform="rotate(-90 110 110)"/>
+          <circle id="ring-spent-arc" cx="110" cy="110" r="88" fill="none" stroke="#f87171" stroke-width="22"
+            stroke-linecap="butt" stroke-dasharray="552.92" stroke-dashoffset="552.92"
+            transform="rotate(-90 110 110)"/>
+        </svg>
+        <div id="ring-center">
+          <div id="ring-amount">$0.00</div>
+          <div id="ring-label-sub">remaining</div>
+          <div id="ring-spent-label">spent $0.00</div>
+        </div>
+      </div>
+
+      <div id="swipe-status" style="margin-bottom: 1.5rem; text-align: center;">
+        <div class="stat-lbl" style="margin-bottom: 4px;">Meal Swipes</div>
+        <div id="dash-swipes-large" style="font-size: 26px; font-weight: 700; color: var(--green); font-family: 'Nunito', sans-serif;">0</div>
+      </div>
+
+      <div class="dash-actions">
+        <button class="dash-action-btn primary-action" data-view="log">
+          <span class="action-icon">＋</span> Log a meal
+        </button>
+        <button class="dash-action-btn" data-view="history">
+          <span class="action-icon">≡</span> View history
+        </button>
+        <button class="dash-action-btn" data-view="edit">
+          <span class="action-icon">⚙</span> Edit settings
+        </button>
+      </div>
+    </div>
+
+    <div class="dash-right scroll-y">
+      <div>
+        <div class="stat-section-title">Overview</div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-lbl">Spent so far</div><div class="stat-val" id="stat-spent">$0.00</div></div>
+          <div class="stat-card"><div class="stat-lbl">Days left</div><div class="stat-val" id="stat-days">—</div></div>
+          <div class="stat-card"><div class="stat-lbl">Avg / day</div><div class="stat-val" id="stat-daily-avg">$0.00</div></div>
+          <div class="stat-card"><div class="stat-lbl">Budget / day</div><div class="stat-val" id="stat-suggested">$0.00</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="stat-section-title">Average by meal type</div>
+        <div class="stat-grid stat-grid-4">
+          <div class="stat-card"><div class="stat-lbl">Breakfast</div><div class="stat-val" id="avg-breakfast">—</div></div>
+          <div class="stat-card"><div class="stat-lbl">Lunch</div><div class="stat-val" id="avg-lunch">—</div></div>
+          <div class="stat-card"><div class="stat-lbl">Dinner</div><div class="stat-val" id="avg-dinner">—</div></div>
+          <div class="stat-card"><div class="stat-lbl">Snacks</div><div class="stat-val" id="avg-snacks">—</div></div>
+        </div>
+      </div>
+
+      <div id="projection-wrap" style="display:none;">
+        <div class="stat-section-title">Projection</div>
+        <div id="projection-banner" class="projection"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-log" class="view">
+    <div class="log-left">
+      <div class="view-title" style="font-size:15px;">Locations</div>
+      <div id="location-list"></div>
+    </div>
+    <div class="log-right">
+      <div>
+        <div class="view-title">Meal details</div>
+        <div class="view-sub">Select a location, pick meal type, then save.</div>
+      </div>
+      <div>
+        <label>Selected location</label>
+        <input type="text" id="log-location" placeholder="Select a location on the left" readonly style="cursor:default; color:var(--text2);">
+      </div>
+      <div>
+        <label>Meal type</label>
+        <div class="meal-type-row" id="meal-type-row">
+          <button class="meal-type-btn selected" data-type="breakfast">Breakfast</button>
+          <button class="meal-type-btn" data-type="lunch">Lunch</button>
+          <button class="meal-type-btn" data-type="dinner">Dinner</button>
+          <button class="meal-type-btn" data-type="snack">Snack</button>
+        </div>
+      </div>
+      <div>
+        <label>Amount ($)</label>
+        <div class="amount-preview" id="amount-preview">—</div>
+        <input type="number" id="log-amount" placeholder="Enter or adjust amount" min="0" step="0.01" style="margin-top:8px;">
+      </div>
+      <div>
+        <label>Date of purchase</label>
+        <input type="date" id="log-date">
+      </div>
+      <div>
+        <label>Note (optional)</label>
+        <input type="text" id="log-note" placeholder="e.g. added coffee, extra items">
+      </div>
+      <button id="log-meal-btn" class="btn btn-primary">Save entry →</button>
+      <button id="swipe-action-btn" class="btn btn-primary" style="display:none; background:#4ade80; color:#1a1a1a;">Use 1 Swipe instead →</button>
+      <button id="back-dashboard-btn" class="btn btn-ghost">Back to dashboard</button>
+    </div>
+  </div>
+
+  <div id="view-history" class="view scroll-y" style="flex-direction:column; padding:2rem 2.5rem;">
+    <div class="history-header">
+      <div>
+        <div class="view-title">History</div>
+        <div class="view-sub">All logged meals and purchases</div>
+      </div>
+      <button id="reset-all-btn" class="btn btn-danger" style="width:auto; padding:9px 16px; margin-top:0;">Reset all data</button>
+    </div>
+    <div id="history-content"></div>
+  </div>
+
+  <div id="view-edit" class="view">
+    <div style="padding:2rem 2.5rem; max-width:440px; display:flex; flex-direction:column; gap:1rem; width:100%;">
+      <div><div class="view-title">Settings</div><div class="view-sub">Update your school, balance, or swipes.</div></div>
+      <hr class="divider">
+      <label>Change School</label>
+      <select id="edit-school-dropdown">
+        <option value="ncstate">NC State University</option>
+        <option value="rit">Rochester Institute of Technology</option>
+        <option value="uncw">UNC Wilmington</option>
+        <option value="uncc">UNC Charlotte</option>
+        <option value="uncch">UNC Chapel Hill</option>
+      </select>
+      <label for="edit-balance">Starting balance ($)</label>
+      <input type="number" id="edit-balance" step="0.01">
+      <label for="edit-days">Days remaining</label>
+      <input type="number" id="edit-days">
+      <label for="edit-swipes">Meal Swipes (or 'Unlimited')</label>
+      <input type="text" id="edit-swipes">
+      <button id="save-main-data-btn" class="btn btn-primary">Save changes →</button>
+      <button id="cancel-settings-btn" class="btn btn-ghost">Cancel</button>    <hr class="divider">
+    <div style="display: flex; gap: 8px;">
+      <button id="export-users-btn" class="btn btn-ghost" style="flex: 1;">Export Users</button>
+      <input type="file" id="import-users-input" accept=".json" style="display: none;">
+      <button id="import-users-btn" class="btn btn-ghost" style="flex: 1;">Import Users</button>
+    </div>    </div>
+  </div>
+</div>
+
+<script type="module" src="./auth.js"></script>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

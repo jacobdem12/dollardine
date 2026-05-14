@@ -38,10 +38,12 @@ select option { background: var(--bg3); }
 
 #page-main { flex-direction: column; min-height: 100vh; }
 .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; border-bottom: 1px solid var(--border); background: var(--bg2); flex-shrink: 0; }
-.top-bar-left { display: flex; align-items: center; gap: 10px; }
-.top-bar-title { font-size: 14px; font-weight: 600; }
+.top-bar-left { display: flex; align-items: center; gap: 12px; background: rgba(0, 0, 0, 0.24); border: 1px solid rgba(255,255,255,0.30); border-radius: 18px; padding: 10px 16px; cursor: pointer; transition: background 0.15s ease, transform 0.15s ease; flex: 0 0 auto; max-width: 190px; }
+.top-bar-left:hover { background: rgba(255,255,255,0.28); transform: translateY(-1px); }
+.top-bar-left:focus-visible { outline: 2px solid rgba(59,130,246,0.55); outline-offset: 2px; }
+.top-bar-title { font-size: 14px; font-weight: 600; color: var(--green); }
 .top-bar-sub { font-size: 11px; color: var(--text3); }
-.top-nav { display: flex; gap: 4px; }
+.top-nav { display: flex; gap: 4px; flex: 0 1 35%; justify-content: flex-end; }
 .nav-pill { padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; background: transparent; color: var(--text2); font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
 .nav-pill:hover { background: var(--bg3); color: var(--text); }
 .nav-pill.active { background: var(--bg3); color: var(--text); border-color: var(--border2); }
@@ -49,14 +51,14 @@ select option { background: var(--bg3); }
 .view.active { display: flex; }
 
 #view-dashboard { flex-direction: row; }
-  .dash-left { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; padding: 1.5rem; gap: 1.5rem; }
-.dash-right { flex: 1; padding: 1.5rem 1.5rem 2.5rem; display: grid; grid-template-rows: auto auto 1fr; gap: 1rem; min-height: calc(100vh - 3rem); overflow-y: auto; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02), 0 30px 60px rgba(0,0,0,0.18); }
+  .dash-left { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; padding: 1rem; gap: 1rem; }
+.dash-right { flex: 1; padding: 1rem 1rem 1.5rem; display: grid; grid-template-rows: auto auto 1fr; gap: 1rem; min-height: calc(100vh - 3rem); overflow-y: auto; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02), 0 30px 60px rgba(0,0,0,0.18); }
 
 #ring-wrap { position: relative; width: 190px; height: 190px; flex-shrink: 0; margin: 0 auto; }
 #ring-wrap svg { width: 100%; height: 100%; display: block; }
 #ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-#ring-amount { font-size: 26px; font-weight: 700; font-family: 'Nunito', sans-serif; line-height: 1; color: var(--text); }
-#ring-label-sub { font-size: 11px; color: var(--text3); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+#ring-amount { font-size: 22px; font-weight: 700; font-family: 'Nunito', sans-serif; line-height: 1; color: var(--text); }
+#ring-label-sub { font-size: 10px; color: var(--text3); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
 #ring-spent-label { font-size: 12px; color: var(--red); margin-top: 6px; font-family: 'Nunito', sans-serif; }
 
   #swipe-status { width: 100%; }
@@ -74,7 +76,7 @@ select option { background: var(--bg3); }
   .location-list-dropdown .location-btn:last-child { border-bottom: none; }
 .stat-card, .projection { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 14px 16px; box-shadow: 0 14px 24px rgba(0,0,0,0.08); }
 .stat-card { background: rgba(255,255,255,0.02); }
-.stat-section-title { font-size: 13px; font-weight: 700; margin-bottom: 0.75rem; letter-spacing: 0.01em; }
+.stat-section-title { font-size: 13px; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: 0.01em; }
 .stat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
 .stat-grid.stat-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .stat-lbl { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
@@ -83,12 +85,12 @@ select option { background: var(--bg3); }
 .proj-green { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
 .proj-red { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
 .proj-tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
-.tag-green { background: rgba(74,222,128,0.2); color: var(--green); }
+.tag-darkgray { background: rgba(36, 36, 36, 0.2); color: var(--darkgray); }
 .tag-red { background: rgba(248,113,113,0.2); color: var(--red); }
 .proj-text { color: var(--text2); }
 .proj-text strong { color: var(--text); }
-.dash-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; width: 100%; align-items: stretch; }
-.dash-action-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; border-radius: 16px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.15s; min-height: 110px; }
+.dash-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; width: 100%; align-items: stretch; }
+.dash-action-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 12px; border-radius: 16px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.15s; min-height: 90px; }
 .dash-action-btn:hover { background: var(--bg4); border-color: var(--border2); color: var(--text); }
 .dash-action-btn.primary-action { background: var(--accent-dim); border-color: rgba(232,201,122,0.25); color: var(--accent); }
 .dash-action-btn.primary-action:hover { background: rgba(232,201,122,0.18); }
@@ -201,15 +203,17 @@ select option { background: var(--bg3); }
     align-items: center;
     gap: 10px;
     cursor: pointer; 
-    padding: 10px 0;
+    padding: 10px 12px;
     font-weight: 600; 
-    background: transparent;
-    border: none;
-    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.24);
+    border: 1px solid rgba(255,255,255,0.30);
+    border-radius: 16px;
     color: var(--text);
     font-size: 14px;
     flex: 1;
   }
+  .mobile-menu-trigger:hover { background: rgba(255,255,255,0.28); }
+  .mobile-menu-trigger:focus-visible { outline: 2px solid rgba(59,130,246,0.55); outline-offset: 2px; }
   
   /* 3. Style the mobile dropdown menu */
   .mobile-nav {
@@ -258,7 +262,7 @@ select option { background: var(--bg3); }
   .log-left { width: 100% !important; border-right: none; }
   
   /* Increase tap target sizes for mobile screens */
-  .dash-action-btn, .nav-pill { padding: 12px; font-size: 14px; min-height: 100px; }
+  .dash-action-btn, .nav-pill { padding: 12px; font-size: 14px; min-height: 80px; }
   /* Keep three columns on mobile for dashboard actions */
   
   /* Optimize grid layout for smaller widths */
@@ -275,17 +279,4 @@ select option { background: var(--bg3); }
   .week-title { font-size: 14px; }
   .week-total { font-size: 14px; align-self: flex-end; }
 }
-  .dash-left { width: 100% !important; border-right: none; padding: 1rem; }
-  .dash-right { padding: 1rem; }
-  
-  /* Stack log screen columns */
-  #view-log { flex-direction: column !important; }
-  .log-left { width: 100% !important; border-right: none; }
-  
-  /* Increase tap target sizes for mobile screens */
-  .dash-action-btn, .nav-pill { padding: 12px; font-size: 14px; min-height: 100px; }
-  /* Keep three columns on mobile for dashboard actions */
-  
-  /* Optimize grid layout for smaller widths */
-  .stat-grid { grid-template-columns: 1fr 1fr; }
 }

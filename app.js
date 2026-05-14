@@ -42,7 +42,6 @@ const UI = {
   navPills: Array.from(document.querySelectorAll('.nav-pill')),
   dashActionButtons: Array.from(document.querySelectorAll('.dash-action-btn')),
   dashSwipesLarge: document.getElementById('dash-swipes-large'),
-  ringRemainArc: document.getElementById('ring-remain-arc'),
   ringSpentArc: document.getElementById('ring-spent-arc'),
   ringAmount: document.getElementById('ring-amount'),
   ringSpentLabel: document.getElementById('ring-spent-label'),
@@ -280,6 +279,7 @@ function showView(name) {
   if (name === 'history') renderHistory();
   if (name === 'edit') renderEdit();
   if (name === 'log') {
+    autoSelectMealTypeByTime();
     buildLocationList();
     setTodayDate();
   }
@@ -366,6 +366,17 @@ function selectMealType(button) {
   button.classList.add('selected');
   selectedMealType = button.dataset.type;
   applyMealPrice();
+}
+
+function autoSelectMealTypeByTime() {
+  const hour = new Date().getHours();
+  let type = 'snack';
+  if (hour >= 5 && hour < 11) type = 'breakfast';
+  else if (hour >= 11 && hour < 15) type = 'lunch';
+  else if (hour >= 15 && hour < 21) type = 'dinner';
+
+  const button = document.querySelector(`.meal-type-btn[data-type="${type}"]`);
+  if (button) selectMealType(button);
 }
 
 function startTracking() {
@@ -657,8 +668,7 @@ function updateDashboard() {
 
   UI.ringAmount.textContent = formatCurrency(remaining);
   UI.ringSpentLabel.textContent = `spent ${formatCurrency(spent)}`;
-  UI.ringRemainArc.setAttribute('stroke-dashoffset', (CIRC * spentPct).toFixed(2));
-  UI.ringSpentArc.setAttribute('stroke-dashoffset', (CIRC * remainPct).toFixed(2));
+  UI.ringSpentArc.setAttribute('stroke-dashoffset', (CIRC * (1 - spentPct)).toFixed(2));
 
   UI.dashSwipesLarge.textContent = state.isUnlimited ? 'Unlimited' : String(state.swipes);
   UI.statSpent.textContent = formatCurrency(spent);

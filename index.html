@@ -26,8 +26,8 @@
     <input type="text" id="auth-username" placeholder="Enter username">
     <label for="auth-password">Password</label>
     <input type="password" id="auth-password" placeholder="Enter password">
-    <button id="login-btn" class="btn btn-primary">Sign in</button>
-    <button id="signup-btn" class="btn btn-ghost">Sign up</button>
+    <button id="signin-btn" class="btn btn-primary" onclick="handleSignin()">Sign In</button>
+    <button id="signup-btn" class="btn btn-ghost" onclick="handleSignup()">Sign Up</button>
     <div id="auth-message" style="color: var(--red); font-size: 13px; margin-top: 8px;"></div>
   </div>
 </div>
@@ -103,13 +103,12 @@
         <div id="ring-center">
           <div id="ring-amount">$0.00</div>
           <div id="ring-label-sub">remaining</div>
-          <div id="ring-spent-label">spent $0.00</div>
         </div>
       </div>
 
       <div class="dash-actions">
         <div id="swipe-status" class="dash-action-btn swipe-display mobile-swipes">
-          <div class="action-text">Meal Swipes</div>
+          <div class="action-text" style="color: var(--green);">Meal Swipes</div>
           <div id="dash-swipes-large" class="swipe-number">0</div>
         </div>
         <button class="dash-action-btn primary-action" data-view="log">
@@ -130,18 +129,14 @@
           <div class="stat-card"><div class="stat-lbl">Spent so far</div><div class="stat-val" id="stat-spent">$0.00</div></div>
           <div class="stat-card"><div class="stat-lbl">Days left</div><div class="stat-val" id="stat-days">—</div></div>
           <div class="stat-card"><div class="stat-lbl">Avg / day</div><div class="stat-val" id="stat-daily-avg">$0.00</div></div>
-          <div class="stat-card"><div class="stat-lbl">Budget / day</div><div class="stat-val" id="stat-suggested">$0.00</div></div>
-        </div>
+          <div class="stat-card"><div class="stat-lbl">Safe Spend / Day</div><div class="stat-val" id="stat-suggested" style="font-weight: bold;">$0.00</div></div>
+          <div class="stat-card insight-card" id="insight-card-elem"><div class="stat-lbl">Insight</div><div class="insight-text" id="insight-message">Start logging meals to see insights</div></div>
+          <div class="stat-card status-card" id="status-card-elem"><div class="stat-lbl">Budget Status</div><div class="stat-val" id="status-label">On Track</div><div class="stat-diff" id="status-diff"></div></div>        </div>
       </div>
 
       <div>
-        <div class="stat-section-title">Average by meal type</div>
-        <div class="stat-grid stat-grid-4">
-          <div class="stat-card"><div class="stat-lbl">Breakfast</div><div class="stat-val" id="avg-breakfast">—</div></div>
-          <div class="stat-card"><div class="stat-lbl">Lunch</div><div class="stat-val" id="avg-lunch">—</div></div>
-          <div class="stat-card"><div class="stat-lbl">Dinner</div><div class="stat-val" id="avg-dinner">—</div></div>
-          <div class="stat-card"><div class="stat-lbl">Snacks</div><div class="stat-val" id="avg-snacks">—</div></div>
-        </div>
+        <div class="stat-section-title">Top Locations</div>
+        <div id="top-locations-container" class="top-locations-grid"></div>
       </div>
 
       <div id="projection-wrap" style="display:none;">
@@ -237,7 +232,6 @@
   </div>
 </div>
 
-<script type="module" src="./auth.js"></script>
-<script type="module" src="./app.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>

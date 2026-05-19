@@ -45,14 +45,18 @@ const UI = {
   ringSpentArc: document.getElementById('ring-spent-arc'),
   ringAmount: document.getElementById('ring-amount'),
   ringSpentLabel: document.getElementById('ring-spent-label'),
+  ringSafeSpendText: document.getElementById('ring-safe-spend-text'),
+  ringStatusLabel: document.getElementById('ring-status-label'),
   statSpent: document.getElementById('stat-spent'),
   statDays: document.getElementById('stat-days'),
   statDailyAvg: document.getElementById('stat-daily-avg'),
   statSuggested: document.getElementById('stat-suggested'),
-  avgBreakfast: document.getElementById('avg-breakfast'),
-  avgLunch: document.getElementById('avg-lunch'),
-  avgDinner: document.getElementById('avg-dinner'),
-  avgSnacks: document.getElementById('avg-snacks'),
+  insightMessage: document.getElementById('insight-message'),
+  statusLabel: document.getElementById('status-label'),
+  statusDiff: document.getElementById('status-diff'),
+  statusCard: document.getElementById('status-card-elem'),
+  insightCard: document.getElementById('insight-card-elem'),
+  topLocationsContainer: document.getElementById('top-locations-container'),
   locationList: document.getElementById('location-list'),
   locationSelectorBtn: document.getElementById('location-selector-btn'),
   locationSelectorLabel: document.getElementById('location-selector-label'),
@@ -103,7 +107,7 @@ function init() {
 }
 
 function initUI() {
-  UI.loginBtn.addEventListener('click', handleLogin);
+  document.getElementById('signin-btn').addEventListener('click', handleSignin);
   UI.signupBtn.addEventListener('click', handleSignup);
   UI.setupSchoolDropdown.addEventListener('change', onSetupSchoolChange);
   UI.startTrackingBtn.addEventListener('click', startTracking);
@@ -130,6 +134,9 @@ function initUI() {
     const btn = event.target.closest('.meal-type-btn');
     if (btn) selectMealType(btn);
   });
+  
+ // UI.signinButton.addEventListener('click', handleSignin); 
+ //UI.signupButton.addEventListener('click', handleSignup);
   UI.logAmount.addEventListener('input', updateAmountPreview);
   UI.backDashboardBtn.addEventListener('click', () => showView('dashboard'));
   UI.resetAllBtn.addEventListener('click', resetAll);
@@ -219,18 +226,44 @@ function handleLogin() {
   }
 }
 
-function handleSignup() {
-  const username = UI.authUsername.value.trim();
+async function handleSignup() {
+  const email = UI.authUsername.value.trim();
   const password = UI.authPassword.value;
-  if (!username || !password) {
-    UI.authMessage.textContent = 'Please enter username and password.';
+  
+  if (!email || !password) {
+    UI.authMessage.textContent = 'Please enter email and password.';
     return;
   }
-  const result = signup(username, password);
+  
+  const result = await signup(email, password);
   if (result.success) {
-    currentUser = username;
-    showPageSetup();
-    applySetupBranding();
+    currentUser = email;
+    
+    // Save to localStorage so your app remembers you are logged in
+    localStorage.setItem('currentUser', email); 
+    
+    // Refresh the page. This forces your init() function to run,
+    // which will automatically load the correct main screen for you.
+    window.location.reload(); 
+  } else {
+    UI.authMessage.textContent = result.message;
+  }
+}
+
+async function handleSignin() {
+  const email = UI.authUsername.value.trim();
+  const password = UI.authPassword.value;
+
+  if (!email || !password) {
+    UI.authMessage.textContent = 'Please enter email and password.';
+    return;
+  }
+
+  const result = await login(email, password); // assuming your signin function matches this
+  if (result.success) {
+    currentUser = email;
+    localStorage.setItem('currentUser', email);
+    window.location.reload(); // Forces app to boot up directly into the dashboard
   } else {
     UI.authMessage.textContent = result.message;
   }
@@ -667,7 +700,6 @@ function updateDashboard() {
   const remainPct = 1 - spentPct;
 
   UI.ringAmount.textContent = formatCurrency(remaining);
-  UI.ringSpentLabel.textContent = `spent ${formatCurrency(spent)}`;
   UI.ringSpentArc.setAttribute('stroke-dashoffset', (CIRC * (1 - spentPct)).toFixed(2));
 
   UI.dashSwipesLarge.textContent = state.isUnlimited ? 'Unlimited' : String(state.swipes);
@@ -675,21 +707,105 @@ function updateDashboard() {
   UI.statDays.textContent = String(state.daysLeft);
 
   const uniqueDays = state.entries.length > 0 ? new Set(state.entries.map(entry => entry.sortKey)).size : 0;
-  UI.statDailyAvg.textContent = formatCurrency(uniqueDays > 0 ? spent / uniqueDays : 0);
-  UI.statSuggested.textContent = formatCurrency(state.daysLeft > 0 ? remaining / state.daysLeft : 0);
+  const daysPassed = Math.max(uniqueDays, 1);
+  const safeSpendPerDay = state.daysLeft > 0 ? remaining / state.daysLeft : 0;
+  const avgSpendPerDay = spent / daysPassed;
+  const spendDiff = avgSpendPerDay - safeSpendPerDay;
 
-  const typeValues = {
-    breakfast: UI.avgBreakfast,
-    lunch: UI.avgLunch,
-    dinner: UI.avgDinner,
-    snack: UI.avgSnacks
-  };
+  UI.statDailyAvg.textContent = formatCurrency(avgSpendPerDay);
+  UI.statSuggested.textContent = formatCurrency(safeSpendPerDay);
 
-  Object.entries(typeValues).forEach(([type, element]) => {
-    const entries = state.entries.filter(entry => entry.type === type && entry.amount > 0);
-    const avg = entries.length > 0 ? entries.reduce((sum, entry) => sum + entry.amount, 0) / entries.length : null;
-    element.textContent = avg !== null ? formatCurrency(avg) : '—';
+  // Determine budget status for both cards
+  let statusClass = 'status-on-track';
+  let insightClass = 'status-on-track';
+  let insightText = 'Start logging meals to see insights';
+  let statusText = 'On Track';
+  let diffText = '';
+
+  if (spent > 0 && state.daysLeft > 0) {
+    if (avgSpendPerDay > safeSpendPerDay) {
+      const diffAmount = avgSpendPerDay - safeSpendPerDay;
+      const threshold = Math.max(2, safeSpendPerDay * 0.1);
+      
+      if (diffAmount <= threshold) {
+        statusClass = 'status-slightly-over';
+        insightClass = 'status-slightly-over';
+        statusText = 'Slightly Over';
+        insightText = 'You\'re on track to run out early ⚠️';
+        diffText = `Over by ${formatCurrency(diffAmount)}/day`;
+      } else {
+        statusClass = 'status-over';
+        insightClass = 'status-over';
+        statusText = 'Over Budget';
+        insightText = `Try to stay under ${formatCurrency(safeSpendPerDay)}/day`;
+        diffText = `Over by ${formatCurrency(diffAmount)}/day`;
+      }
+    } else {
+      // On track - calculate projected remaining
+      const projectedRemaining = remaining - (avgSpendPerDay * state.daysLeft);
+      const projectedFinal = Math.max(projectedRemaining, 0);
+      statusClass = 'status-on-track';
+      insightClass = 'status-on-track';
+      statusText = 'On Track';
+      insightText = `You'll have ${formatCurrency(projectedFinal)} left 👍`;
+      if (avgSpendPerDay > 0) {
+        const diffAmount = safeSpendPerDay - avgSpendPerDay;
+        diffText = `Under by ${formatCurrency(diffAmount)}/day`;
+      }
+    }
+  } else if (state.daysLeft > 0 && state.balance > 0) {
+    insightText = `You can spend ~${formatCurrency(safeSpendPerDay)}/day and be fine.`;
+  }
+
+  UI.insightMessage.textContent = insightText;
+  UI.insightMessage.classList.remove('status-on-track', 'status-slightly-over', 'status-over');
+  UI.insightCard.classList.remove('status-on-track', 'status-slightly-over', 'status-over');
+  UI.insightMessage.classList.add(insightClass);
+  UI.insightCard.classList.add(insightClass);
+
+  UI.statSuggested.classList.remove('status-on-track', 'status-slightly-over', 'status-over');
+  UI.statusLabel.classList.remove('status-on-track', 'status-slightly-over', 'status-over');
+  UI.statusCard.classList.remove('status-on-track', 'status-slightly-over', 'status-over');
+
+  UI.statusLabel.textContent = statusText;
+  UI.statusDiff.textContent = diffText;
+  UI.statSuggested.classList.add(statusClass);
+  UI.statusLabel.classList.add(statusClass);
+  UI.statusCard.classList.add(statusClass);
+
+  // Calculate top locations
+  const locationSpend = {};
+  state.entries.forEach(entry => {
+    if (entry.amount > 0) {
+      locationSpend[entry.location] = (locationSpend[entry.location] || 0) + entry.amount;
+    }
   });
+
+  const sortedLocations = Object.entries(locationSpend)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  if (sortedLocations.length === 0) {
+    UI.topLocationsContainer.innerHTML = '<div class="empty-placeholder">Start spending to see your top spots</div>';
+  } else {
+    const maxSpend = sortedLocations[0][1];
+    UI.topLocationsContainer.innerHTML = sortedLocations.map(([location, amount]) => {
+      const percentage = ((amount / spent) * 100).toFixed(0);
+      const barWidth = ((amount / maxSpend) * 100).toFixed(1);
+      return `
+        <div class="location-item">
+          <div class="location-header">
+            <span class="location-name">${location}</span>
+            <span class="location-amount">${formatCurrency(amount)}</span>
+          </div>
+          <div class="location-bar-container">
+            <div class="location-bar" style="width: ${barWidth}%"></div>
+            <span class="location-percentage">${percentage}%</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
 }
 
 function setTodayDate() {

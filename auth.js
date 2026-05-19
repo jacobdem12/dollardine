@@ -1,3 +1,11 @@
+import { auth } from './firebase-config.js';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
 export const USERS_KEY = 'diningUsers';
 export const CURRENT_USER_KEY = 'currentUser';
 
@@ -15,25 +23,32 @@ export function saveUsers(users) {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
-export function signup(username, password) {
-  const users = getUsers();
-  if (users[username]) {
-    return { success: false, message: 'Username already exists.' };
-  }
-  users[username] = { password: hashPassword(password), state: null };
-  saveUsers(users);
-  localStorage.setItem(CURRENT_USER_KEY, username);
-  return { success: true };
+export async function signup(email, password) {
+  try {
+    await createUserWithEmailAndPassword(auth, email, password);
+    const users = getUsers();
+    if (!users[email]) {
+      users[email] = { password: hashPassword(password), state: null };
+      saveUsers(users);
+    }
+    localStorage.setItem(CURRENT_USER_KEY, email);
+    return { success: true };
+  } catch (error) {
+    console.error("Firebase Auth Error Details:", error.code, error.message);
+    console.log("CRITICAL ERROR CODE:", error.code);
+    console.log("ERROR MESSAGE:", error.message);
+    return { success: false, message: error.message || 'Unable to sign up.' };
+  } 
 }
 
-export function login(username, password) {
-  const users = getUsers();
-  const user = users[username];
-  if (!user || (user.password !== hashPassword(password) && user.password !== btoa(password))) {
-    return { success: false, message: 'Invalid username or password.' };
+export async function login(email, password) {
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    localStorage.setItem(CURRENT_USER_KEY, email);
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: error.message || 'Invalid email or password.' };
   }
-  localStorage.setItem(CURRENT_USER_KEY, username);
-  return { success: true };
 }
 
 export function logout() {
@@ -56,3 +71,4 @@ export function saveUserState(username, state) {
     saveUsers(users);
   }
 }
+

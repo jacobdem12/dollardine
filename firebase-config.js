@@ -7,7 +7,7 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCs6Bwnp8r2U3GZRQDPQrLAvd8SSHEoSIw",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "dollar-dine.firebaseapp.com",
   projectId: "dollar-dine",
   storageBucket: "dollar-dine.firebasestorage.app",

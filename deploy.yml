@@ -44,3 +44,4 @@ jobs:
         uses: actions/deploy-pages@v4
 
         # force deployment trigger
+        # force deployment trigger x2

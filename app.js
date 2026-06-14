@@ -853,4 +853,44 @@ function importUsers(event) {
   reader.readAsText(file);
 }
 
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+
+// 1. Initialize your Firebase services
+const app = initializeApp(firebaseConfig); // (Uses your config with VITE keys)
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// 2. Listen for when a user logs in or signs up
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    // The user just logged in! Let's grab their unique ID
+    const userId = user.uid;
+    console.log("Logged in user ID:", userId);
+
+    // 3. Save or update their data in your "users" collection
+    try {
+      // Point to: users folder -> document named exactly after their userId
+      const userDocRef = doc(db, "users", userId);
+
+      await setDoc(userDocRef, {
+        email: user.email,
+        lastLogin: new Date(),
+        // You can add custom data fields here (like theme preferences, account tier, etc.)
+        theme: "dark" 
+      }, { merge: true }); // merge: true keeps you from overwriting their other data!
+
+      console.log("Firestore profile updated successfully!");
+    } catch (error) {
+      console.error("Error updating Firestore profile:", error);
+    }
+
+  } else {
+    // User is signed out
+    console.log("No user is currently logged in.");
+  }
+});
+
 init();
+

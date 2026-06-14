@@ -2,141 +2,213 @@
 
 ## Project Purpose
 
-**DollarDine** is a web-based meal plan spending tracker designed for university students. It helps students monitor their dining dollar balance, track spending across multiple dining locations, and manage their meal plan budget throughout the semester.
+**DollarDine** is a student-focused dining dollar tracker and meal coordination app that helps university users monitor meal plan spending, manage meal swipes, make budget decisions, and coordinate meals with friends through a lightweight browser app.
 
-### Key Features
-- **User Authentication**: Secure signup and login system for account management
-- **Multi-School Support**: Track spending for different university dining systems
-- **Meal Logging**: Log meal entries with location, meal type, and cost
-- **Balance Tracking**: Real-time monitoring of dining dollar balance and spending
-- **Purchase History**: View detailed transaction history with filtering and search
-- **Spending Analytics**: Dashboard visualizations showing spending trends, daily averages, and budget status
-- **Semester Planning**: Track days left in semester and calculate daily spending recommendations
-- **Settings Management**: Customize school, balance, plan type, and other preferences
+### Goals
+- Track meal plan balance and spending in one place
+- Support multiple university dining systems and location-based pricing
+- Provide quick insights into average spend, safe daily budget, and top spending locations
+- Persist per-user settings and meal history across sessions
+- Enable users to broadcast meal plans and invite friends to join via push notifications
 
-## Problem Solved
+## High-Level Architecture
 
-Many university students don't have visibility into their dining dollar spending until they run out of money mid-semester. DollarDine addresses this by providing:
-- A centralized place to track every meal purchase
-- Clear visual indicators of remaining balance
-- Spending trends and daily averages
-- Proactive budget management tools
+DollarDine is a single-page browser app built with HTML, CSS, and vanilla JavaScript. It uses local storage for user state and integrates Firebase Authentication for signup/login flow.
 
----
+### Core Modules
 
-## Architecture Overview
+1. **UI / Presentation**
+   - File: `index.html`
+   - Hosts the auth, setup, and main app pages
+   - Includes the responsive page layout, navigation controls, dashboard cards, meal log form, history table, and settings panel
+   - Loads the main script with `type="module"`
 
-DollarDine follows a layered, modular architecture designed for simplicity and maintainability.
+2. **Styling**
+   - File: `styles.css`
+   - Defines the visual design system, page layout, responsive breakpoints, and component styles
+   - Applies consistent brand colors, typography, buttons, cards, and form controls
 
-### 1. Presentation Layer
-**File**: `index.html`
-- Renders the complete user interface with multiple pages:
-  - **Auth Page**: User login and signup
-  - **Setup Page**: Initial configuration (school, balance, meal plan type)
-  - **Main Page**: Dashboard, meal log, history, and settings views
-- Provides semantic HTML structure and accessibility
-- Loads CSS styling and JavaScript modules
+3. **App Controller**
+   - File: `app.js`
+   - Manages full application behavior and user interaction flow
+   - Responsibilities:
+     - initialize the app and determine active page based on authentication state
+     - attach event listeners for login/signup, school selection, meal logging, history actions, and settings
+     - switch between views (`dashboard`, `log`, `history`, `edit`)
+     - build location menus dynamically from school data
+     - compute dashboard metrics and render spending insights
+     - support week-based history grouping, entry editing, and deletion
+     - export/import user records
 
-### 2. Styling Layer
-**File**: `styles.css`
-- Defines theme variables and color palette
-- Implements responsive design for mobile and desktop
-- Styles all UI components: forms, buttons, cards, tables, navigation
-- Creates consistent visual hierarchy and user experience
+4. **Authentication**
+   - File: `auth.js`
+   - Uses Firebase Authentication for sign-up / sign-in
+   - Also stores user data locally in `localStorage` under `diningUsers`
+   - Functions:
+     - `signup(email, password)` creates Firebase accounts and local user records
+     - `login(email, password)` authenticates with Firebase and saves current user locally
+     - `logout()` clears the current user session
+     - `getCurrentUser()`, `getUsers()`, `saveUsers()`, `getUserState()`, `saveUserState()` manage local user records and per-user app state
 
-### 3. Data Layer
-**File**: `data.js`
-- Manages static configuration data:
-  - School metadata (name, badge color, dining locations)
-  - Dining location menus and pricing
-  - Meal type definitions
-- Serves as single source of truth for app configuration
-- Enables easy addition of new schools and dining locations
+5. **Static Data**
+   - File: `data.js`
+   - Contains the school catalog with metadata and dining locations
+   - Each school includes sections, location names, and pricing for breakfast, lunch, dinner, and snacks
+   - Serves as the app’s configuration source for location selection and pricing guidance
 
-### 4. Authentication Layer
-**File**: `auth.js`
-- Handles user account management:
-  - `signup()` creates new user accounts
-  - `login()` authenticates existing users
-  - `logout()` clears current session
-  - `getCurrentUser()` retrieves logged-in user
-  - `getUserState()` and `saveUserState()` manage per-user data persistence
-  - `getUsers()` and `saveUsers()` handle user database operations
-- Manages user isolation and data security
+6. **Persistence**
+   - File: `storage.js`
+   - Provides a simple localStorage wrapper for app state under `STORAGE_KEY`
+   - Includes `loadState()`, `saveState()`, and `resetState()` helpers
+   - In practice, the app stores per-user state in the authenticated user object and saves via `auth.js`
 
-### 5. Application Logic Layer
-**File**: `app.js`
-- Core application controller:
-  - **State Management**: Maintains app state (balance, swipes, entries, etc.)
-  - **View Routing**: Switches between auth, setup, and main pages
-  - **Event Handling**: Processes user interactions (meal logging, deletion, settings updates)
-  - **Dashboard Logic**: Calculates spending statistics, remaining balance, daily averages
-  - **History Management**: Generates transaction history table and filters
-  - **UI Updates**: Renders all dynamic content and visualizations
+7. **Utilities**
+   - File: `utils.js`
+   - Reusable helper utilities for formatting and date handling
+   - Includes `formatCurrency()`, `formatDisplayDate()`, `getTodayISO()`, and `safeParseNumber()`
 
-### 6. Persistence Layer
-**File**: `storage.js`
-- Manages data persistence using browser `localStorage`:
-  - `loadState()` retrieves saved app state
-  - `saveState()` persists current state
-  - `resetState()` clears all stored data
-- Enables seamless user experience across sessions
-- Integrates with authentication for per-user data storage
+8. **Push Notifications System**
+   - File: `notifications.js` (future)
+   - Enables users to broadcast meal plans to friends
+   - Sends push notifications with meal details: user name, meal type, location, and time
+   - Uses Firebase Cloud Messaging (FCM) for browser-based push delivery
+   - Integrates with Service Workers for background notification handling
+   - Stores device tokens and friend connections in Firestore
+   - Notifications appear on recipients' devices even when app is not open
 
-### 7. Utility Layer
-**File**: `utils.js`
-- Provides reusable helper functions:
-  - `formatCurrency()` converts numbers to dollar format
-  - `formatDisplayDate()` formats dates for display
-  - `getTodayISO()` returns current date in ISO format
-- Centralizes common logic and formatting rules
+## Runtime Flow
 
----
+1. App boots in `app.js` and checks the current authenticated user.
+2. If a user is signed in, the app loads that user’s saved state and shows the main dashboard.
+3. If no user is present, the auth page is displayed for sign in or sign up.
+4. After initial setup, users select a school, enter balance/days/swipes, and start tracking.
+5. Meal entries are logged with location, meal type, price/swipe, date, and optional note.
+6. Dashboard calculations update in real time, showing remaining balance, average spend, safe daily budget, and budget status.
+7. User entries are saved to Firestore per user and can be edited or deleted later.
+8. History can be viewed chronologically or grouped by week.
+9. **New: When a user logs a meal, they can optionally broadcast an invitation to friends:**
+   - User clicks "Share meal" or similar action
+   - App constructs a notification payload with: user name, meal type (breakfast/lunch/dinner), location, and time
+   - Notification is sent via Firebase Cloud Messaging to all friends who have subscribed
+   - Friends receive a push notification on their registered devices: **"[Name] is going to [Meal Type] at [Location] at [Time]. Join them?"**
+   - Friends can click the notification to open the app and see the meal details or accept the invitation
+10. Cloud state syncs across sessions so meal broadcasts and history persist.
 
-## Data Flow
+## Key Functional Components
 
-1. **User Authentication**: User signs up/logs in via auth page
-2. **Setup**: User configures school and initial balance on setup page
-3. **Meal Logging**: User enters meal purchase → stored in entries array
-4. **Dashboard**: App calculates statistics from entries → displays balance, trends, visual indicators
-5. **History**: User views/filters transaction history → can delete entries
-6. **Persistence**: All state changes → saved to localStorage → retrieved on next session
+- **Authentication flow**
+  - Firebase-backed credentials with local user state store
+  - Current user persisted in localStorage via `CURRENT_USER_KEY`
 
----
+- **School and location selection**
+  - Dynamic location list built from `data.js`
+  - Meal pricing auto-populated for the chosen meal type and location
 
-## Technology Stack
+- **Meal logging**
+  - Supports dollar purchases and swipe-based entries
+  - Stores entries with display date, sort key, type, location, amount, and note
 
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **Storage**: Browser localStorage API
-- **No External Dependencies**: Lightweight, dependency-free application
-- **Responsive Design**: Mobile-first approach for all devices
+- **Dashboard insights**
+  - Calculates spent amount, remaining balance, average spend, safe spend, and budget status
+  - Renders top spending locations and progress ring visuals
 
----
+- **Settings and persistence**
+  - Users can update school, balance, days remaining, and swipe count
+  - Changes persist across reloads for each signed-in user
+
+- **Push Notifications & Meal Coordination**
+  - Users can share meal plans with friends by broadcasting notifications
+  - System collects device tokens (FCM tokens) on first login
+  - Notification payload includes: sender name, meal type, location, and scheduled time
+  - Recipients receive browser push notifications even when app is closed
+  - Click-to-action: tapping notification opens app and shows meal details
+  - Service Worker handles background notification delivery
+  - Friend connections stored in Firestore under user's contact list
 
 ## File Structure
 
 ```
 DollarDine/
-├── index.html          # Main HTML structure
-├── app.js              # Application logic and state management
-├── auth.js             # User authentication system
-├── data.js             # Static configuration and school data
-├── storage.js          # LocalStorage persistence layer
-├── utils.js            # Utility and helper functions
-├── styles.css          # Application styling
-├── ARCHITECTURE.md     # This file
-├── USER_AUTH.md        # Authentication documentation
-└── TOOLCHAIN.md        # Build and deployment tools
+├── index.html             # Single-page UI with auth, setup, dashboard, log, history, and settings
+├── app.js                 # App controller: state, routing, event handling, dashboard, history, and persistence
+├── auth.js                # Firebase authentication and per-user local state management
+├── data.js                # Static school and dining location metadata
+├── storage.js             # Firestore and localStorage helper functions for meals and state
+├── utils.js               # Formatting and date helper utilities
+├── notifications.js       # Push notification system: sending invites and managing tokens (future)
+├── service-worker.js      # Service worker for background notification handling (future)
+├── styles.css             # Styling and responsive layout definitions
+├── firebase-config.js     # Firebase initialization for auth, Firestore, and Cloud Messaging
+├── ARCHITECTURE.md        # Architecture documentation
+├── USER_AUTH.md           # Authentication design notes and details
+└── TOOLCHAIN.md           # Build/development tooling notes
 ```
 
----
+## Technology Stack
 
-## Future Enhancement Opportunities
+- HTML5, CSS3, JavaScript (ES6 modules)
+- Firebase Authentication for user login/signup
+- Firebase Firestore for cloud data persistence (meals, settings, friend contacts)
+- Firebase Cloud Messaging (FCM) for push notifications
+- Browser `localStorage` for local caching and session state
+- Service Workers for background notification handling
+- No build tool dependencies required for runtime
 
-1. **Backend Integration**: Move from localStorage to a server-based database
-2. **API Integration**: Connect to real university dining systems for live pricing
-3. **Advanced Analytics**: Add spending predictions and budget recommendations
-4. **Mobile App**: Convert to native mobile application
-5. **Social Features**: Share spending insights or compare with friends
-6. **Export Tools**: Generate CSV/PDF reports of spending history
-7. **Real-time Sync**: Sync data across multiple devices
+## Limitations & Notes
+
+- Push notifications require users to grant browser permission and register a device token.
+- Friend discovery currently requires manual contact list management; no in-app friend search yet.
+- Service Workers may have limited support on older browsers or non-HTTPS origins.
+- Firestore is used for meals and settings; authentication is primary responsibility of Firebase Auth.
+
+## Data Model
+
+### Firestore Collections
+
+```
+users/
+  {uid}/
+    - email: string
+    - school: string
+    - balance: number
+    - daysLeft: number
+    - swipes: number | "Unlimited"
+    - createdAt: timestamp
+    - lastLogin: timestamp
+    
+  {uid}/meals/
+    {mealId}/
+      - type: "breakfast" | "lunch" | "dinner" | "snack"
+      - location: string
+      - amount: number
+      - note: string
+      - date: string (display format)
+      - sortKey: string (ISO date)
+      - timestamp: timestamp
+      - sharedWith: string[] (array of friend UIDs)
+    
+  {uid}/contacts/
+    {friendId}/
+      - email: string
+      - name: string
+      - deviceToken: string
+      - addedAt: timestamp
+```
+
+## Enhancement Opportunities
+
+- **Push Notifications (In Progress)**
+  - Implement Firebase Cloud Messaging integration
+  - Create service worker for background message handling
+  - Add friend list management UI
+  - Send meal broadcast notifications with location and time
+  - Allow recipients to accept/decline invitations
+
+- **Advanced Features**
+  - Add spending predictions and budget recommendations
+  - Integrate with real university dining APIs for live pricing
+  - Generate CSV/PDF reports of spending history
+  - Add spending trend graphs and visualizations
+  - Implement account recovery and password reset flows
+  - Add multi-device sync with conflict resolution
+  - Social features: leaderboards, shared meal budgets, group dining events

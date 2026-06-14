@@ -1,7 +1,12 @@
 import { SCHOOLS } from './data.js';
 import { formatCurrency, formatDisplayDate, getTodayISO } from './utils.js';
-import { loadState, saveState, resetState } from './storage.js';
+import { saveMealToCloud, loadUserAppStateFromCloud, saveUserSetupToCloud } from "./storage.js";
 import { signup, login, logout, getCurrentUser, getUserState, saveUserState, getUsers, saveUsers } from './auth.js';
+
+// 👇 MAKE SURE THIS LINE IS RIGHT HERE:
+import { auth } from "./firebase-config.js"; 
+
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const state = {
   school: 'ncstate',
@@ -417,6 +422,8 @@ function startTracking() {
   const dayCount = parseInt(UI.setupDays.value, 10);
   const swipeRaw = UI.setupSwipes.value.trim().toLowerCase();
 
+saveUserSetupToCloud(auth.currentUser.uid, state);
+
   if (Number.isNaN(bal) || Number.isNaN(dayCount) || dayCount < 1) {
     alert('Please enter a valid balance and days remaining.');
     return;
@@ -440,15 +447,29 @@ function startTracking() {
   showView('dashboard');
 }
 
-function logMeal() {
+async function logMeal() {
   const location = UI.logLocation.value.trim();
   const rawAmount = UI.logAmount.value.trim();
   const amount = rawAmount === '' ? 0 : parseFloat(rawAmount);
   const rawDate = UI.logDate.value;
 
+// 1. Make sure 'e' is passed into the parentheses here!
+async function logMeal(e) { // 👈 Add 'e' here
+    if (e) e.preventDefault(); // 👈 Add this line here
+
+    console.log("logMeal triggered");
+};
+
   const isDiningHall = selectedLocation?.dataset.dh === 'true';
   if (!location || Number.isNaN(amount) || !rawDate || (rawAmount === '' && !isDiningHall)) {
     alert('Please fill out location, amount, and date.');
+    return;
+  }
+
+  console.log('Checking auth.currentUser in logMeal');
+  const user = auth.currentUser;
+  if (!user) {
+    alert('You must be logged in to log a meal.');
     return;
   }
 
@@ -458,20 +479,29 @@ function logMeal() {
     amount,
     note: UI.logNote.value.trim(),
     date: formatDisplayDate(rawDate),
-    sortKey: rawDate
+    sortKey: rawDate,
+    timestamp: new Date()
   };
 
-  if (currentEditIndex !== null) {
-    state.entries[currentEditIndex] = entryData;
-    currentEditIndex = null;
-    UI.logMealBtn.textContent = 'Save entry →';
-  } else {
-    state.entries.push(entryData);
-  }
+  try {
+    console.log('Saving meal to cloud in logMeal', { uid: user.uid, entryData });
+    await saveMealToCloud(user.uid, entryData);
 
-  sortEntries();
-  saveUserState(currentUser, state);
-  showView('dashboard');
+    if (currentEditIndex !== null) {
+      state.entries[currentEditIndex] = entryData;
+      currentEditIndex = null;
+      UI.logMealBtn.textContent = 'Save entry →';
+    } else {
+      state.entries.push(entryData);
+    }
+
+    sortEntries();
+    saveUserState(currentUser, state);
+    showView('dashboard');
+  } catch (error) {
+    console.error('Failed to log meal:', error);
+    alert('Failed to save meal to cloud. Please try again.');
+  }
 }
 
 function editHistoryEntry(index) {
@@ -507,7 +537,7 @@ function editHistoryEntry(index) {
   UI.logMealBtn.textContent = 'Save changes →';
 }
 
-function useSwipe() {
+async function useSwipe() {
   if (!selectedLocation) {
     alert('Please select a dining hall first.');
     return;
@@ -524,22 +554,43 @@ function useSwipe() {
     return;
   }
 
+  console.log('useSwipe triggered', { location: UI.logLocation.value, rawDate, selectedMealType });
+  console.log('Checking auth.currentUser in useSwipe');
+  const user = auth.currentUser;
+  if (!user) {
+    alert('You must be logged in to use a swipe.');
+    return;
+  }
+
   if (!state.isUnlimited) {
     state.swipes -= 1;
   }
 
-  state.entries.push({
+  const swipeEntry = {
     type: selectedMealType,
     location: UI.logLocation.value,
     amount: 0,
     note: 'Used Swipe',
     date: formatDisplayDate(rawDate),
-    sortKey: rawDate
-  });
+    sortKey: rawDate,
+    timestamp: new Date()
+  };
 
-  sortEntries();
-  saveUserState(currentUser, state);
-  showView('dashboard');
+  try {
+    console.log('Saving swipe entry to cloud in useSwipe', { uid: user.uid, swipeEntry });
+    await saveMealToCloud(user.uid, swipeEntry);
+
+    state.entries.push(swipeEntry);
+    sortEntries();
+    saveUserState(currentUser, state);
+    showView('dashboard');
+  } catch (error) {
+    console.error('Failed to save swipe to cloud:', error);
+    alert('Failed to save swipe to cloud. Please try again.');
+    if (!state.isUnlimited) {
+      state.swipes += 1;
+    }
+  }
 }
 
 function saveMainData() {
@@ -853,43 +904,48 @@ function importUsers(event) {
   reader.readAsText(file);
 }
 
-import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
 
-// 1. Initialize your Firebase services
-const app = initializeApp(firebaseConfig); // (Uses your config with VITE keys)
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-// 2. Listen for when a user logs in or signs up
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    // The user just logged in! Let's grab their unique ID
-    const userId = user.uid;
-    console.log("Logged in user ID:", userId);
+    if (user) {
+        try {
+            console.log("app.js: User detected with ID:", user.uid);
+            currentUser = user.email;
 
-    // 3. Save or update their data in your "users" collection
-    try {
-      // Point to: users folder -> document named exactly after their userId
-      const userDocRef = doc(db, "users", userId);
-
-      await setDoc(userDocRef, {
-        email: user.email,
-        lastLogin: new Date(),
-        // You can add custom data fields here (like theme preferences, account tier, etc.)
-        theme: "dark" 
-      }, { merge: true }); // merge: true keeps you from overwriting their other data!
-
-      console.log("Firestore profile updated successfully!");
-    } catch (error) {
-      console.error("Error updating Firestore profile:", error);
+            // 1. Fetch the combined profile data + meals from Firestore
+            const cloudPackage = await loadUserAppStateFromCloud(user.uid); 
+            
+            if (cloudPackage && cloudPackage.school) {
+                // 2. If profile settings exist in the cloud, merge them into your state
+                Object.assign(state, cloudPackage);
+                
+                // 3. Run your layout math and display functions
+                if (typeof applySchoolBranding === "function") applySchoolBranding();
+                if (typeof showPageMain === "function") showPageMain();
+                if (typeof showView === "function") showView('dashboard');
+                if (typeof renderDashboard === "function") renderDashboard();
+                if (typeof updateDashboard === "function") updateDashboard();
+                
+                console.log("App state & profile metrics fully populated from cloud.");
+            } else {
+                // No cloud settings found yet - send them to setup screen
+                if (typeof showPageSetup === "function") {
+                    showPageSetup();
+                    if (typeof applySetupBranding === "function") applySetupBranding();
+                }
+            }
+            
+        } catch (error) {
+            console.error("app.js: Error syncing cloud data package:", error);
+        }
+    } else {
+        currentUser = null;
+        // Clear layout state variables on complete logout
+        state.school = 'ncstate';
+        state.balance = 0;
+        state.daysLeft = 0;
+        state.swipes = 0;
+        state.entries = [];
     }
-
-  } else {
-    // User is signed out
-    console.log("No user is currently logged in.");
-  }
 });
 
 init();

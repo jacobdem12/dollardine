@@ -2,8 +2,6 @@ import { SCHOOLS } from './data.js';
 import { formatCurrency, formatDisplayDate, getTodayISO } from './utils.js';
 import { saveMealToCloud, loadUserAppStateFromCloud, saveUserSetupToCloud } from "./storage.js";
 import { signup, login, logout, getCurrentUser, getUserState, saveUserState, getUsers, saveUsers } from './auth.js';
-
-// 👇 MAKE SURE THIS LINE IS RIGHT HERE:
 import { auth } from "./firebase-config.js"; 
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -140,8 +138,6 @@ function initUI() {
     if (btn) selectMealType(btn);
   });
   
- // UI.signinButton.addEventListener('click', handleSignin); 
- //UI.signupButton.addEventListener('click', handleSignup);
   UI.logAmount.addEventListener('input', updateAmountPreview);
   UI.backDashboardBtn.addEventListener('click', () => showView('dashboard'));
   UI.resetAllBtn.addEventListener('click', resetAll);
@@ -164,7 +160,6 @@ function initUI() {
   UI.logDate.value = getTodayISO();
 }
 
-// Add this to app.js
 function toggleMobileNav() {
   if (!UI.mobileNav) return;
   UI.mobileNav.classList.toggle('active');
@@ -244,11 +239,8 @@ async function handleSignup() {
   if (result.success) {
     currentUser = email;
     
-    // Save to localStorage so your app remembers you are logged in
     localStorage.setItem('currentUser', email); 
-    
-    // Refresh the page. This forces your init() function to run,
-    // which will automatically load the correct main screen for you.
+
     window.location.reload(); 
   } else {
     UI.authMessage.textContent = result.message;
@@ -264,11 +256,11 @@ async function handleSignin() {
     return;
   }
 
-  const result = await login(email, password); // assuming your signin function matches this
+  const result = await login(email, password); 
   if (result.success) {
     currentUser = email;
     localStorage.setItem('currentUser', email);
-    window.location.reload(); // Forces app to boot up directly into the dashboard
+    window.location.reload(); 
   } else {
     UI.authMessage.textContent = result.message;
   }
@@ -453,9 +445,8 @@ async function logMeal() {
   const amount = rawAmount === '' ? 0 : parseFloat(rawAmount);
   const rawDate = UI.logDate.value;
 
-// 1. Make sure 'e' is passed into the parentheses here!
-async function logMeal(e) { // 👈 Add 'e' here
-    if (e) e.preventDefault(); // 👈 Add this line here
+async function logMeal(e) {
+    if (e) e.preventDefault(); 
 
     console.log("logMeal triggered");
 };
@@ -635,12 +626,11 @@ function renderHistory() {
   };
 
   if (state.sortByWeek) {
-    // Group entries by week
     const entriesByWeek = {};
     state.entries.forEach((entry, index) => {
       const date = new Date(entry.date);
       const weekStart = new Date(date);
-      weekStart.setDate(date.getDate() - date.getDay()); // Start of week (Sunday)
+      weekStart.setDate(date.getDate() - date.getDay()); 
       const weekKey = weekStart.toISOString().split('T')[0];
       
       if (!entriesByWeek[weekKey]) {
@@ -649,7 +639,6 @@ function renderHistory() {
       entriesByWeek[weekKey].push({ ...entry, originalIndex: index });
     });
 
-    // Sort weeks in descending order (most recent first)
     const sortedWeeks = Object.keys(entriesByWeek).sort((a, b) => new Date(b) - new Date(a));
 
     UI.historyContent.innerHTML = sortedWeeks.map(weekKey => {
@@ -691,7 +680,6 @@ function renderHistory() {
       `;
     }).join('');
   } else {
-    // Default chronological view
     UI.historyContent.innerHTML = `
       <table class="entry-table">
         <thead>
@@ -766,7 +754,6 @@ function updateDashboard() {
   UI.statDailyAvg.textContent = formatCurrency(avgSpendPerDay);
   UI.statSuggested.textContent = formatCurrency(safeSpendPerDay);
 
-  // Determine budget status for both cards
   let statusClass = 'status-on-track';
   let insightClass = 'status-on-track';
   let insightText = 'Start logging meals to see insights';
@@ -792,7 +779,6 @@ function updateDashboard() {
         diffText = `Over by ${formatCurrency(diffAmount)}/day`;
       }
     } else {
-      // On track - calculate projected remaining
       const projectedRemaining = remaining - (avgSpendPerDay * state.daysLeft);
       const projectedFinal = Math.max(projectedRemaining, 0);
       statusClass = 'status-on-track';
@@ -824,7 +810,6 @@ function updateDashboard() {
   UI.statusLabel.classList.add(statusClass);
   UI.statusCard.classList.add(statusClass);
 
-  // Calculate top locations
   const locationSpend = {};
   state.entries.forEach(entry => {
     if (entry.amount > 0) {
@@ -911,14 +896,11 @@ onAuthStateChanged(auth, async (user) => {
             console.log("app.js: User detected with ID:", user.uid);
             currentUser = user.email;
 
-            // 1. Fetch the combined profile data + meals from Firestore
             const cloudPackage = await loadUserAppStateFromCloud(user.uid); 
             
             if (cloudPackage && cloudPackage.school) {
-                // 2. If profile settings exist in the cloud, merge them into your state
                 Object.assign(state, cloudPackage);
                 
-                // 3. Run your layout math and display functions
                 if (typeof applySchoolBranding === "function") applySchoolBranding();
                 if (typeof showPageMain === "function") showPageMain();
                 if (typeof showView === "function") showView('dashboard');
@@ -927,7 +909,6 @@ onAuthStateChanged(auth, async (user) => {
                 
                 console.log("App state & profile metrics fully populated from cloud.");
             } else {
-                // No cloud settings found yet - send them to setup screen
                 if (typeof showPageSetup === "function") {
                     showPageSetup();
                     if (typeof applySetupBranding === "function") applySetupBranding();
@@ -939,7 +920,6 @@ onAuthStateChanged(auth, async (user) => {
         }
     } else {
         currentUser = null;
-        // Clear layout state variables on complete logout
         state.school = 'ncstate';
         state.balance = 0;
         state.daysLeft = 0;

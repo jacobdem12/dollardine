@@ -3,10 +3,15 @@ import { formatCurrency, formatDisplayDate, getTodayISO } from './utils.js';
 import { saveMealToCloud, loadUserAppStateFromCloud, saveUserSetupToCloud } from "./storage.js";
 import { signup, login, logout, getCurrentUser, getUserState, saveUserState, getUsers, saveUsers } from './auth.js';
 import { auth } from "./firebase-config.js"; 
-
+import { doc, collection, onSnapshot, query, orderBy, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { db } from './firebase-config.js'; 
+import {setDoc } from "firebase/firestore";
 
-const state = {
+
+
+// Expose application state globally for debugging and console access
+window.state = window.state || {
   school: 'ncstate',
   balance: 0,
   daysLeft: 0,
@@ -16,6 +21,9 @@ const state = {
   entries: [],
   sortByWeek: false
 };
+
+// Local alias used throughout this module
+const state = window.state;
 
 const CIRC = 2 * Math.PI * 88;
 let selectedMealType = 'breakfast';
@@ -29,7 +37,7 @@ const UI = {
   pageMain: document.getElementById('page-main'),
   authUsername: document.getElementById('auth-username'),
   authPassword: document.getElementById('auth-password'),
-  loginBtn: document.getElementById('login-btn'),
+  signinBtn: document.getElementById('signin-btn'),
   signupBtn: document.getElementById('signup-btn'),
   authMessage: document.getElementById('auth-message'),
   setupSchoolDropdown: document.getElementById('setup-school-dropdown'),
@@ -91,26 +99,18 @@ const UI = {
 };
 
 function init() {
-  currentUser = getCurrentUser();
-  if (currentUser) {
-    const userState = getUserState(currentUser);
-    if (userState) {
-      Object.assign(state, userState);
-      applySchoolBranding();
-      showPageMain();
-      showView('dashboard');
-    } else {
-      showPageSetup();
-      applySetupBranding();
-    }
-  } else {
-    showPageAuth();
-  }
+  // Initialize UI bindings first
   initUI();
+
+  // Defer state restoration to Firebase auth/onSnapshot to avoid loading
+  // stale localStorage copies that can overwrite cloud-saved values on reload.
+  // onAuthStateChanged will route the UI and populate `state` from Firestore.
+  console.log('init: waiting for Firebase auth state to restore user (onAuthStateChanged)');
+  showPageAuth();
 }
 
 function initUI() {
-  document.getElementById('signin-btn').addEventListener('click', handleSignin);
+  UI.signinBtn.addEventListener('click', handleSignin);
   UI.signupBtn.addEventListener('click', handleSignup);
   UI.setupSchoolDropdown.addEventListener('change', onSetupSchoolChange);
   UI.startTrackingBtn.addEventListener('click', startTracking);
@@ -226,43 +226,52 @@ function handleLogin() {
   }
 }
 
-async function handleSignup() {
-  const email = UI.authUsername.value.trim();
-  const password = UI.authPassword.value;
-  
-  if (!email || !password) {
-    UI.authMessage.textContent = 'Please enter email and password.';
-    return;
-  }
-  
-  const result = await signup(email, password);
-  if (result.success) {
-    currentUser = email;
-    
-    localStorage.setItem('currentUser', email); 
+async function handleSetupSubmit(e) {
+  if (e) e.preventDefault(); // stop forms from submitting
 
-    window.location.reload(); 
-  } else {
-    UI.authMessage.textContent = result.message;
-  }
-}
-
-async function handleSignin() {
-  const email = UI.authUsername.value.trim();
-  const password = UI.authPassword.value;
-
-  if (!email || !password) {
-    UI.authMessage.textContent = 'Please enter email and password.';
+  const authUser = auth.currentUser;
+  if (!authUser) {
+    console.error('Cannot save profile: No authenticated user found.');
+    if (typeof showPageAuth === 'function') showPageAuth();
     return;
   }
 
-  const result = await login(email, password); 
-  if (result.success) {
-    currentUser = email;
-    localStorage.setItem('currentUser', email);
-    window.location.reload(); 
+  // Read actual UI elements defined in the DOM
+  const school = UI.setupSchoolDropdown?.value || state.school;
+  const balance = parseFloat(UI.setupBalance?.value) || 0;
+  const daysLeft = parseInt(UI.setupDays?.value, 10) || 0;
+  const swipeRaw = (UI.setupSwipes?.value || '').toString().trim().toLowerCase();
+
+  let isUnlimited = false;
+  let swipes = 0;
+  if (swipeRaw === 'unlimited') {
+    isUnlimited = true;
+    swipes = 0;
   } else {
-    UI.authMessage.textContent = result.message;
+    swipes = Math.max(parseInt(swipeRaw, 10) || 0, 0);
+  }
+
+  // Merge into local state
+  state.school = school;
+  state.balance = balance;
+  state.daysLeft = daysLeft;
+  state.swipes = swipes;
+  state.isUnlimited = isUnlimited;
+
+  const setupData = { school, balance, daysLeft, swipes, isUnlimited, updatedAt: new Date().toISOString() };
+  console.log('👉 SETUP SUBMIT CLICKED! Here is what we grabbed:', setupData);
+
+  try {
+    await saveUserSetupToCloud(authUser.uid, state);
+    currentUser = authUser.email || currentUser;
+    saveUserState(currentUser, state);
+
+    applySchoolBranding();
+    showPageMain();
+    showView('dashboard');
+  } catch (error) {
+    console.error('Error saving setup profile to Firestore:', error);
+    if (UI.setupErrorMessage) UI.setupErrorMessage.textContent = 'Failed to save profile. Please try again.';
   }
 }
 
@@ -409,12 +418,10 @@ function autoSelectMealTypeByTime() {
   if (button) selectMealType(button);
 }
 
-function startTracking() {
+async function startTracking() {
   const bal = parseFloat(UI.setupBalance.value);
   const dayCount = parseInt(UI.setupDays.value, 10);
   const swipeRaw = UI.setupSwipes.value.trim().toLowerCase();
-
-saveUserSetupToCloud(auth.currentUser.uid, state);
 
   if (Number.isNaN(bal) || Number.isNaN(dayCount) || dayCount < 1) {
     alert('Please enter a valid balance and days remaining.');
@@ -433,66 +440,80 @@ saveUserSetupToCloud(auth.currentUser.uid, state);
     state.swipes = Math.max(parseInt(swipeRaw, 10) || 0, 0);
   }
 
-  saveUserState(currentUser, state);
+  const authUser = auth.currentUser;
+  if (authUser) {
+    try {
+      await saveUserSetupToCloud(authUser.uid, state);
+      currentUser = authUser.email || currentUser;
+      saveUserState(currentUser, state);
+      console.log('startTracking: saved setup to Firestore', { uid: authUser.uid, state });
+    } catch (error) {
+      console.error('startTracking: failed to save setup to Firestore', error);
+    }
+  } else {
+    console.warn('startTracking: no authenticated user found, saving locally only');
+    saveUserState(currentUser, state);
+  }
+
   applySchoolBranding();
   showPageMain();
   showView('dashboard');
 }
 
-async function logMeal() {
-  const location = UI.logLocation.value.trim();
-  const rawAmount = UI.logAmount.value.trim();
-  const amount = rawAmount === '' ? 0 : parseFloat(rawAmount);
-  const rawDate = UI.logDate.value;
+async function saveUserProfile(uid, setupData) {
+    const userDocRef = doc(db, "users", uid);
+    await setDoc(userDocRef, {
+        school: setupData.school,
+        balance: setupData.balance,   // total budget
+        daysLeft: setupData.daysLeft,
+        swipes: setupData.swipes,
+        isUnlimited: setupData.isUnlimited
+    }, { merge: true }); // merge true avoids wiping out other fields
+}
 
 async function logMeal(e) {
-    if (e) e.preventDefault(); 
-
-    console.log("logMeal triggered");
-};
-
-  const isDiningHall = selectedLocation?.dataset.dh === 'true';
-  if (!location || Number.isNaN(amount) || !rawDate || (rawAmount === '' && !isDiningHall)) {
-    alert('Please fill out location, amount, and date.');
-    return;
-  }
-
-  console.log('Checking auth.currentUser in logMeal');
-  const user = auth.currentUser;
-  if (!user) {
-    alert('You must be logged in to log a meal.');
-    return;
-  }
-
-  const entryData = {
-    type: selectedMealType,
-    location,
-    amount,
-    note: UI.logNote.value.trim(),
-    date: formatDisplayDate(rawDate),
-    sortKey: rawDate,
-    timestamp: new Date()
-  };
-
-  try {
-    console.log('Saving meal to cloud in logMeal', { uid: user.uid, entryData });
-    await saveMealToCloud(user.uid, entryData);
-
-    if (currentEditIndex !== null) {
-      state.entries[currentEditIndex] = entryData;
-      currentEditIndex = null;
-      UI.logMealBtn.textContent = 'Save entry →';
-    } else {
-      state.entries.push(entryData);
+    if (e) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
     }
 
-    sortEntries();
-    saveUserState(currentUser, state);
-    showView('dashboard');
-  } catch (error) {
-    console.error('Failed to log meal:', error);
-    alert('Failed to save meal to cloud. Please try again.');
-  }
+    const location = UI.logLocation.value.trim();
+    const rawAmount = UI.logAmount.value.trim();
+    const amount = rawAmount === '' ? 0 : parseFloat(rawAmount);
+    const rawDate = UI.logDate.value;
+    const isDiningHall = selectedLocation?.dataset.dh === 'true';
+
+    if (!location || Number.isNaN(amount) || !rawDate || (rawAmount === '' && !isDiningHall)) {
+      alert('Please fill out location, amount, and date.');
+      return;
+    }
+
+    const user = auth.currentUser;
+    if (!user) {
+      alert('You must be logged in to log a meal.');
+      return;
+    }
+
+    const entryData = {
+      type: selectedMealType,
+      location,
+      amount,
+      note: UI.logNote.value.trim(),
+      date: formatDisplayDate(rawDate),
+      sortKey: rawDate,
+      timestamp: new Date()
+    };
+
+    try {
+      console.log('Saving meal to cloud in logMeal', { uid: user.uid, entryData });
+      await saveMealToCloud(user.uid, entryData);
+      currentEditIndex = null;
+      UI.logMealBtn.textContent = 'Save entry →';
+      showView('dashboard');
+    } catch (error) {
+      console.error('Failed to log meal:', error);
+      alert('Failed to save meal to cloud. Please try again.');
+    }
 }
 
 function editHistoryEntry(index) {
@@ -578,7 +599,7 @@ async function useSwipe() {
   } catch (error) {
     console.error('Failed to save swipe to cloud:', error);
     alert('Failed to save swipe to cloud. Please try again.');
-    if (!state.isUnlimited) {
+    if (!state.isUnlimited) { 
       state.swipes += 1;
     }
   }
@@ -613,7 +634,9 @@ function saveMainData() {
 }
 
 function renderHistory() {
-  if (state.entries.length === 0) {
+  UI.historyContent.innerHTML = '';
+  const entries = state.entries || [];
+  if (entries.length === 0) {
     UI.historyContent.innerHTML = '<div class="empty-state">No entries yet.</div>';
     return;
   }
@@ -670,7 +693,7 @@ function renderHistory() {
                   <td class="entry-amount" data-label="Amount">${entry.amount === 0 ? 'Swipe' : formatCurrency(entry.amount)}</td>
                   <td data-label="Actions">
                     <button class="edit-btn" data-index="${entry.originalIndex}">Edit</button>
-                    <button class="del-btn" data-index="${entry.originalIndex}">Remove</button>
+                    <button class="del-btn" onclick="deleteMealEntry('${entry.id || ''}')">Remove</button>
                   </td>
                 </tr>
               `).join('')}
@@ -695,7 +718,7 @@ function renderHistory() {
               <td class="entry-amount" data-label="Amount">${entry.amount === 0 ? 'Swipe' : formatCurrency(entry.amount)}</td>
               <td data-label="Actions">
                 <button class="edit-btn" data-index="${index}">Edit</button>
-                <button class="del-btn" data-index="${index}">Remove</button>
+                <button class="del-btn" onclick="deleteMealEntry('${entry.id || ''}')">Remove</button>
               </td>
             </tr>
           `).join('')}
@@ -724,6 +747,24 @@ function deleteEntry(index) {
   renderHistory();
   updateDashboard();
 }
+
+async function deleteMealEntry(mealId) {
+  const user = auth.currentUser;
+  if (!user || !mealId) {
+    console.warn('deleteMealEntry: missing user or mealId', { user, mealId });
+    return;
+  }
+
+  try {
+    const mealDocRef = doc(db, 'users', user.uid, 'meals', mealId);
+    await deleteDoc(mealDocRef);
+    console.log('🗑️ Meal deleted successfully from Firestore!', mealId);
+  } catch (error) {
+    console.error('Error deleting meal:', error);
+  }
+}
+
+window.deleteMealEntry = deleteMealEntry;
 
 function renderEdit() {
   UI.editSchoolDropdown.value = state.school;
@@ -889,44 +930,207 @@ function importUsers(event) {
   reader.readAsText(file);
 }
 
+let profileListenerUnsub = null;
+let mealsListenerUnsub = null;
 
-onAuthStateChanged(auth, async (user) => {
+onAuthStateChanged(auth, (user) => {
     if (user) {
-        try {
-            console.log("app.js: User detected with ID:", user.uid);
-            currentUser = user.email;
+        console.log("app.js: Active user detected:", user.uid);
+        currentUser = user.email;
 
-            const cloudPackage = await loadUserAppStateFromCloud(user.uid); 
-            
-            if (cloudPackage && cloudPackage.school) {
-                Object.assign(state, cloudPackage);
-                
+        // Clean up any lingering active listeners before spawning new ones
+        if (profileListenerUnsub) {
+            profileListenerUnsub();
+            profileListenerUnsub = null;
+        }
+        if (mealsListenerUnsub) {
+            mealsListenerUnsub();
+            mealsListenerUnsub = null;
+        }
+
+        const userDocRef = doc(db, "users", user.uid);
+        const mealsCollectionRef = collection(db, "users", user.uid, "meals");
+        const mealsQuery = query(mealsCollectionRef, orderBy('sortKey', 'desc'));
+
+        // 1. THE PROFILE LISTENER
+        profileListenerUnsub = onSnapshot(userDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const profileData = docSnap.data();
+                console.log("🔥 FIRESTORE SNAPSHOT FIRED WITH DATA:", docSnap.data());
+              console.trace("Where did this snapshot call come from?");
+                // Merge cloud numbers straight into state
+                state.school = profileData.school || state.school;
+                state.balance = profileData.balance !== undefined ? profileData.balance : state.balance;
+                state.daysLeft = profileData.daysLeft !== undefined ? profileData.daysLeft : state.daysLeft;
+                state.swipes = profileData.swipes !== undefined ? profileData.swipes : state.swipes;
+                state.isUnlimited = profileData.isUnlimited !== undefined ? profileData.isUnlimited : state.isUnlimited;
+
+                console.log("☁️ Real-time Profile Sync Loaded:", { balance: state.balance, days: state.daysLeft });
+
+                // PROFILE EXISTS -> Route safely to dashboard and render
                 if (typeof applySchoolBranding === "function") applySchoolBranding();
-                if (typeof showPageMain === "function") showPageMain();
-                if (typeof showView === "function") showView('dashboard');
-                if (typeof renderDashboard === "function") renderDashboard();
                 if (typeof updateDashboard === "function") updateDashboard();
-                
-                console.log("App state & profile metrics fully populated from cloud.");
+                if (typeof renderDashboard === "function") renderDashboard();
+                if (typeof showPageMain === "function") showPageMain(); 
             } else {
+                // NO PROFILE EXISTS -> Send them to the onboarding setup panel
+                console.log("No profile found for user, directing to setup.");
                 if (typeof showPageSetup === "function") {
                     showPageSetup();
                     if (typeof applySetupBranding === "function") applySetupBranding();
                 }
             }
-            
-        } catch (error) {
-            console.error("app.js: Error syncing cloud data package:", error);
-        }
+        }, (error) => {
+            console.error("Profile listener error:", error);
+        });
+
+        // 2. THE MEALS LISTENER
+        mealsListenerUnsub = onSnapshot(mealsQuery, (querySnapshot) => {
+            const updatedMeals = [];
+            querySnapshot.forEach((doc) => {
+                updatedMeals.push({ id: doc.id, ...doc.data() });
+            });
+
+            state.entries = updatedMeals;
+            window.state.entries = updatedMeals;
+            console.log(`☁️ Real-time Meals Sync: ${state.entries.length} meals compiled.`);
+
+            if (typeof updateDashboard === "function") updateDashboard();
+            if (typeof renderDashboard === "function") renderDashboard();
+            if (typeof renderHistory === "function") renderHistory();
+        }, (error) => {
+            console.error("Meals listener error:", error);
+        });
+
     } else {
+        console.log("User signed out. Clearing memory streams.");
         currentUser = null;
+
+        // Immediately detach active listeners
+        if (profileListenerUnsub) {
+            profileListenerUnsub();
+            profileListenerUnsub = null;
+        }
+        if (mealsListenerUnsub) {
+            mealsListenerUnsub();
+            mealsListenerUnsub = null;
+        }
+
         state.school = 'ncstate';
         state.balance = 0;
         state.daysLeft = 0;
         state.swipes = 0;
+        state.isUnlimited = false;
+        state.recentLocation = '';
         state.entries = [];
+
+        if (UI.historyContent) {
+            UI.historyContent.innerHTML = '<div class="empty-state">No entries yet.</div>';
+        }
+        if (UI.topLocationsContainer) {
+            UI.topLocationsContainer.innerHTML = '<div class="empty-placeholder">Start spending to see your top spots</div>';
+        }
+        if (UI.ringAmount) UI.ringAmount.textContent = formatCurrency(0);
+        if (UI.dashSwipesLarge) UI.dashSwipesLarge.textContent = '0';
+        if (UI.statSpent) UI.statSpent.textContent = formatCurrency(0);
+        if (UI.statDays) UI.statDays.textContent = '0';
+        if (UI.statDailyAvg) UI.statDailyAvg.textContent = formatCurrency(0);
+        if (UI.statSuggested) UI.statSuggested.textContent = formatCurrency(0);
+        if (UI.insightMessage) UI.insightMessage.textContent = 'Sign in to start tracking';
+        if (UI.statusLabel) UI.statusLabel.textContent = 'On Track';
+        if (UI.statusDiff) UI.statusDiff.textContent = '';
+
+        if (window.spentChartInstance) {
+            window.spentChartInstance.destroy();
+            window.spentChartInstance = null;
+        }
+        if (window.topPlacesChartInstance) {
+            window.topPlacesChartInstance.destroy();
+            window.topPlacesChartInstance = null;
+        }
+
+        if (typeof showPageAuth === "function") {
+            showPageAuth();
+        }
+    }
+    if (user) {
+        console.log("app.js: Active user detected:", user.uid);
+        currentUser = user.email;
+
+        // ... [Your existing profile and meals listeners here] ...
+
+        // 🌟 ADD THIS AT THE BOTTOM OF 'if (user)':
+        // If the user is logged in, hide the login screen and show the app!
+        if (typeof showPageMain === "function") {
+            showPageMain();
+        } else {
+            // Fallback: Manually switch visibility if you use DOM display styles
+            const authPage = document.getElementById('auth-page'); // Change to your auth container ID
+            const mainPage = document.getElementById('main-page'); // Change to your main dashboard container ID
+            
+            if (authPage) authPage.style.display = 'none';
+            if (mainPage) mainPage.style.display = 'block';
+        }
+
+    } else {
+        console.log("User signed out.");
+        // When logged out, show the login form
+        if (typeof showPageAuth === "function") {
+            showPageAuth();
+        }
     }
 });
+
+async function handleSignup(e) {
+    if (e) e.preventDefault();
+    
+    const email = UI.authUsername.value.trim();
+    const password = UI.authPassword.value;
+    
+    if (!email || !password) {
+        UI.authMessage.textContent = 'Please enter email and password.';
+        return;
+    }
+
+    if (password.length < 6) {
+        UI.authMessage.textContent = 'Password must be at least 6 characters.';
+        return;
+    }
+
+    if (auth.currentUser) {
+        console.log('handleSignup: signing out existing Firebase session before signup');
+        await logout();
+    }
+    
+    const result = await signup(email, password);
+    if (!result.success) {
+        UI.authMessage.textContent = result.message;
+    }
+}
+
+if (UI.setupForm) {
+    UI.setupForm.addEventListener('submit', handleSetupSubmit);
+} 
+else if (UI.setupSaveButton) {
+    UI.setupSaveButton.addEventListener('click', handleSetupSubmit);
+}
+
+async function handleSignin(e) {
+    if (e) e.preventDefault(); 
+    
+    const email = UI.authUsername.value.trim();
+    const password = UI.authPassword.value;
+
+    if (!email || !password) {
+        UI.authMessage.textContent = 'Please enter email and password.';
+        return;
+    }
+
+    const result = await login(email, password); 
+    if (!result.success) {
+        UI.authMessage.textContent = result.message;
+    }
+}
 
 init();
 

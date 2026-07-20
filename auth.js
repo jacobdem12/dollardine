@@ -25,20 +25,26 @@ export function saveUsers(users) {
 
 export async function signup(email, password) {
   try {
-    await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const users = getUsers();
     if (!users[email]) {
       users[email] = { password: hashPassword(password), state: null };
       saveUsers(users);
     }
     localStorage.setItem(CURRENT_USER_KEY, email);
-    return { success: true };
+    return { success: true, user: userCredential.user };
   } catch (error) {
     console.error("Firebase Auth Error Details:", error.code, error.message);
-    console.log("CRITICAL ERROR CODE:", error.code);
-    console.log("ERROR MESSAGE:", error.message);
-    return { success: false, message: error.message || 'Unable to sign up.' };
-  } 
+    let message = "Unable to sign up.";
+    if (error.code === 'auth/email-already-in-use') {
+      message = "That email is already registered. Try logging in instead.";
+    } else if (error.code === 'auth/weak-password') {
+      message = "Password must be at least 6 characters.";
+    } else if (error.code === 'auth/invalid-email') {
+      message = "Please enter a valid email address.";
+    }
+    return { success: false, message };
+  }
 }
 
 export async function login(email, password) {
@@ -51,7 +57,13 @@ export async function login(email, password) {
   }
 }
 
-export function logout() {
+export async function logout() {
+  // Sign out from Firebase Auth and clear local session key
+  try {
+    await signOut(auth);
+  } catch (err) {
+    console.error('Error during Firebase signOut:', err);
+  }
   localStorage.removeItem(CURRENT_USER_KEY);
 }
 

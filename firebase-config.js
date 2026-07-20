@@ -1,6 +1,5 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-// Import standard getFirestore instead of the advanced initializer
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -17,4 +16,6 @@ const app = initializeApp(firebaseConfig);
 
 // Use the standard, ultra-lightweight database initialization
 export const db = getFirestore(app);
+// export const auth = getAuth(app);
+// Export `auth` so other modules can use the Firebase Auth instance
 export const auth = getAuth(app);

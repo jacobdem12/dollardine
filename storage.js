@@ -1,6 +1,5 @@
 import { db } from "./firebase-config.js";
-import { collection, doc, setDoc, getDoc, getDocs, addDoc } from "firebase/firestore";
-
+import { collection, doc, setDoc, getDoc, getDocs, addDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 /**
  * Saves a single meal to the cloud
  */

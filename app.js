@@ -10,7 +10,6 @@ import {setDoc } from "firebase/firestore";
 
 
 
-// Expose application state globally for debugging and console access
 window.state = window.state || {
   school: 'ncstate',
   balance: 0,
@@ -22,7 +21,6 @@ window.state = window.state || {
   sortByWeek: false
 };
 
-// Local alias used throughout this module
 const state = window.state;
 
 const CIRC = 2 * Math.PI * 88;
@@ -98,20 +96,33 @@ const UI = {
   importUsersInput: document.getElementById('import-users-input')
 };
 
+function setupAuthListeners() {
+  const loginForm = document.getElementById('login-form');
+  const signupForm = document.getElementById('signup-form');
+
+  if (loginForm) {
+    loginForm.addEventListener('submit', handleSignin);
+  } else if (UI.signinBtn) {
+    UI.signinBtn.addEventListener('click', handleSignin);
+  }
+
+  if (signupForm) {
+    signupForm.addEventListener('submit', handleSignup);
+  } else if (UI.signupBtn) {
+    UI.signupBtn.addEventListener('click', handleSignup);
+  }
+}
+
 function init() {
-  // Initialize UI bindings first
   initUI();
 
-  // Defer state restoration to Firebase auth/onSnapshot to avoid loading
-  // stale localStorage copies that can overwrite cloud-saved values on reload.
-  // onAuthStateChanged will route the UI and populate `state` from Firestore.
   console.log('init: waiting for Firebase auth state to restore user (onAuthStateChanged)');
   showPageAuth();
 }
 
 function initUI() {
-  UI.signinBtn.addEventListener('click', handleSignin);
-  UI.signupBtn.addEventListener('click', handleSignup);
+  // wire auth listeners: prefer form submit if available, else buttons
+  setupAuthListeners();
   UI.setupSchoolDropdown.addEventListener('change', onSetupSchoolChange);
   UI.startTrackingBtn.addEventListener('click', startTracking);
   UI.logoutBtn.addEventListener('click', handleLogout);
@@ -227,7 +238,7 @@ function handleLogin() {
 }
 
 async function handleSetupSubmit(e) {
-  if (e) e.preventDefault(); // stop forms from submitting
+  if (e) e.preventDefault();
 
   const authUser = auth.currentUser;
   if (!authUser) {
@@ -236,7 +247,6 @@ async function handleSetupSubmit(e) {
     return;
   }
 
-  // Read actual UI elements defined in the DOM
   const school = UI.setupSchoolDropdown?.value || state.school;
   const balance = parseFloat(UI.setupBalance?.value) || 0;
   const daysLeft = parseInt(UI.setupDays?.value, 10) || 0;
@@ -251,7 +261,6 @@ async function handleSetupSubmit(e) {
     swipes = Math.max(parseInt(swipeRaw, 10) || 0, 0);
   }
 
-  // Merge into local state
   state.school = school;
   state.balance = balance;
   state.daysLeft = daysLeft;
@@ -461,14 +470,14 @@ async function startTracking() {
 }
 
 async function saveUserProfile(uid, setupData) {
-    const userDocRef = doc(db, "users", uid);
-    await setDoc(userDocRef, {
-        school: setupData.school,
-        balance: setupData.balance,   // total budget
-        daysLeft: setupData.daysLeft,
-        swipes: setupData.swipes,
-        isUnlimited: setupData.isUnlimited
-    }, { merge: true }); // merge true avoids wiping out other fields
+  const userDocRef = doc(db, "users", uid);
+  await setDoc(userDocRef, {
+    school: setupData.school,
+    balance: setupData.balance,
+    daysLeft: setupData.daysLeft,
+    swipes: setupData.swipes,
+    isUnlimited: setupData.isUnlimited
+  }, { merge: true });
 }
 
 async function logMeal(e) {
@@ -938,7 +947,7 @@ onAuthStateChanged(auth, (user) => {
         console.log("app.js: Active user detected:", user.uid);
         currentUser = user.email;
 
-        // Clean up any lingering active listeners before spawning new ones
+        
         if (profileListenerUnsub) {
             profileListenerUnsub();
             profileListenerUnsub = null;
@@ -952,39 +961,33 @@ onAuthStateChanged(auth, (user) => {
         const mealsCollectionRef = collection(db, "users", user.uid, "meals");
         const mealsQuery = query(mealsCollectionRef, orderBy('sortKey', 'desc'));
 
-        // 1. THE PROFILE LISTENER
         profileListenerUnsub = onSnapshot(userDocRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const profileData = docSnap.data();
-                console.log("🔥 FIRESTORE SNAPSHOT FIRED WITH DATA:", docSnap.data());
-              console.trace("Where did this snapshot call come from?");
-                // Merge cloud numbers straight into state
-                state.school = profileData.school || state.school;
-                state.balance = profileData.balance !== undefined ? profileData.balance : state.balance;
-                state.daysLeft = profileData.daysLeft !== undefined ? profileData.daysLeft : state.daysLeft;
-                state.swipes = profileData.swipes !== undefined ? profileData.swipes : state.swipes;
-                state.isUnlimited = profileData.isUnlimited !== undefined ? profileData.isUnlimited : state.isUnlimited;
+          if (docSnap.exists()) {
+            const profileData = docSnap.data();
+            console.log("🔥 FIRESTORE SNAPSHOT FIRED WITH DATA:", docSnap.data());
+            state.school = profileData.school || state.school;
+            state.balance = profileData.balance !== undefined ? profileData.balance : state.balance;
+            state.daysLeft = profileData.daysLeft !== undefined ? profileData.daysLeft : state.daysLeft;
+            state.swipes = profileData.swipes !== undefined ? profileData.swipes : state.swipes;
+            state.isUnlimited = profileData.isUnlimited !== undefined ? profileData.isUnlimited : state.isUnlimited;
 
-                console.log("☁️ Real-time Profile Sync Loaded:", { balance: state.balance, days: state.daysLeft });
+            console.log("☁️ Real-time Profile Sync Loaded:", { balance: state.balance, days: state.daysLeft });
 
-                // PROFILE EXISTS -> Route safely to dashboard and render
-                if (typeof applySchoolBranding === "function") applySchoolBranding();
-                if (typeof updateDashboard === "function") updateDashboard();
-                if (typeof renderDashboard === "function") renderDashboard();
-                if (typeof showPageMain === "function") showPageMain(); 
-            } else {
-                // NO PROFILE EXISTS -> Send them to the onboarding setup panel
-                console.log("No profile found for user, directing to setup.");
-                if (typeof showPageSetup === "function") {
-                    showPageSetup();
-                    if (typeof applySetupBranding === "function") applySetupBranding();
-                }
+            if (typeof applySchoolBranding === "function") applySchoolBranding();
+            if (typeof updateDashboard === "function") updateDashboard();
+            if (typeof renderDashboard === "function") renderDashboard();
+            if (typeof showPageMain === "function") showPageMain(); 
+          } else {
+            console.log("No profile found for user, directing to setup.");
+            if (typeof showPageSetup === "function") {
+              showPageSetup();
+              if (typeof applySetupBranding === "function") applySetupBranding();
             }
+          }
         }, (error) => {
-            console.error("Profile listener error:", error);
+          console.error("Profile listener error:", error);
         });
 
-        // 2. THE MEALS LISTENER
         mealsListenerUnsub = onSnapshot(mealsQuery, (querySnapshot) => {
             const updatedMeals = [];
             querySnapshot.forEach((doc) => {
@@ -999,14 +1002,14 @@ onAuthStateChanged(auth, (user) => {
             if (typeof renderDashboard === "function") renderDashboard();
             if (typeof renderHistory === "function") renderHistory();
         }, (error) => {
-            console.error("Meals listener error:", error);
+          console.error("Meals listener error:", error);
         });
 
     } else {
         console.log("User signed out. Clearing memory streams.");
         currentUser = null;
 
-        // Immediately detach active listeners
+        
         if (profileListenerUnsub) {
             profileListenerUnsub();
             profileListenerUnsub = null;
@@ -1025,7 +1028,7 @@ onAuthStateChanged(auth, (user) => {
         state.entries = [];
 
         if (UI.historyContent) {
-            UI.historyContent.innerHTML = '<div class="empty-state">No entries yet.</div>';
+          UI.historyContent.innerHTML = '<div class="empty-state">No entries yet.</div>';
         }
         if (UI.topLocationsContainer) {
             UI.topLocationsContainer.innerHTML = '<div class="empty-placeholder">Start spending to see your top spots</div>';
@@ -1050,62 +1053,71 @@ onAuthStateChanged(auth, (user) => {
         }
 
         if (typeof showPageAuth === "function") {
-            showPageAuth();
+          showPageAuth();
         }
     }
-    if (user) {
+      if (user) {
         console.log("app.js: Active user detected:", user.uid);
         currentUser = user.email;
 
-        // ... [Your existing profile and meals listeners here] ...
-
-        // 🌟 ADD THIS AT THE BOTTOM OF 'if (user)':
-        // If the user is logged in, hide the login screen and show the app!
         if (typeof showPageMain === "function") {
-            showPageMain();
+          showPageMain();
         } else {
-            // Fallback: Manually switch visibility if you use DOM display styles
-            const authPage = document.getElementById('auth-page'); // Change to your auth container ID
-            const mainPage = document.getElementById('main-page'); // Change to your main dashboard container ID
-            
-            if (authPage) authPage.style.display = 'none';
-            if (mainPage) mainPage.style.display = 'block';
+          const authPage = document.getElementById('auth-page');
+          const mainPage = document.getElementById('main-page');
+          if (authPage) authPage.style.display = 'none';
+          if (mainPage) mainPage.style.display = 'block';
         }
 
-    } else {
+      } else {
         console.log("User signed out.");
-        // When logged out, show the login form
         if (typeof showPageAuth === "function") {
-            showPageAuth();
+          showPageAuth();
         }
-    }
+      }
 });
 
 async function handleSignup(e) {
-    if (e) e.preventDefault();
-    
-    const email = UI.authUsername.value.trim();
-    const password = UI.authPassword.value;
-    
-    if (!email || !password) {
-        UI.authMessage.textContent = 'Please enter email and password.';
-        return;
-    }
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
 
-    if (password.length < 6) {
-        UI.authMessage.textContent = 'Password must be at least 6 characters.';
-        return;
-    }
+  const email = UI.authUsername?.value.trim() || '';
+  const password = UI.authPassword?.value || '';
 
-    if (auth.currentUser) {
-        console.log('handleSignup: signing out existing Firebase session before signup');
-        await logout();
+  if (!email) {
+    alert('Please enter your email address.');
+    return;
+  }
+  if (!email.includes('@') || !email.includes('.')) {
+    alert('Please enter a valid email address.');
+    return;
+  }
+  if (!password) {
+    alert('Please enter a password.');
+    return;
+  }
+  if (password.length < 6) {
+    alert('Password must be at least 6 characters long.');
+    return;
+  }
+
+  if (auth.currentUser) {
+    await logout();
+  }
+
+  const result = await signup(email, password);
+  if (!result.success) {
+    console.error('Signup error:', result.code, result.message);
+    if (result.code === 'auth/email-already-in-use') {
+      alert('This email is already registered. Try logging in instead.');
+    } else {
+      alert('Signup failed: ' + (result.message || 'Unknown error'));
     }
-    
-    const result = await signup(email, password);
-    if (!result.success) {
-        UI.authMessage.textContent = result.message;
-    }
+  } else {
+    console.log('✅ Signup successful!');
+  }
 }
 
 if (UI.setupForm) {
@@ -1116,20 +1128,26 @@ else if (UI.setupSaveButton) {
 }
 
 async function handleSignin(e) {
-    if (e) e.preventDefault(); 
-    
-    const email = UI.authUsername.value.trim();
-    const password = UI.authPassword.value;
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
 
-    if (!email || !password) {
-        UI.authMessage.textContent = 'Please enter email and password.';
-        return;
-    }
+  const email = UI.authUsername?.value.trim() || '';
+  const password = UI.authPassword?.value || '';
 
-    const result = await login(email, password); 
-    if (!result.success) {
-        UI.authMessage.textContent = result.message;
-    }
+  if (!email || !password) {
+    alert('Please enter both email and password.');
+    return;
+  }
+
+  const result = await login(email, password);
+  if (!result.success) {
+    console.error('Login error:', result.message);
+    alert('Login failed: ' + (result.message || 'Unknown error'));
+  } else {
+    console.log('✅ Login successful!');
+  }
 }
 
 init();

@@ -12,7 +12,6 @@ html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(-
 .page { display: none; width: 100%; min-height: 100vh; }
 .page.active { display: flex; }
 
-/* SETUP */
 #page-setup { align-items: center; justify-content: center; padding: 2rem; }
 .setup-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 2.5rem; width: 100%; max-width: 420px; }
 .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; }
@@ -198,15 +197,12 @@ select option { background: var(--bg3); }
 .week-title { font-weight: 600; color: var(--text); }
 .week-total { font-weight: 600; color: var(--accent); }
 
-/* --- MOBILE RESPONSIVE NAV --- */
-
-/* 1. Hide the mobile-only elements by default */
 .mobile-menu-trigger, .mobile-nav { display: none; }
 .desktop-only { display: block; }
 .mobile-swipes { display: block; }
 
 @media (max-width: 768px) {
-  /* 2. Hide the desktop top-nav and show the menu trigger */
+  
   #desktop-nav { display: none !important; }
   .mobile-menu-trigger { 
     display: flex !important;
@@ -225,9 +221,9 @@ select option { background: var(--bg3); }
   .mobile-menu-trigger:hover { background: rgba(255,255,255,0.28); }
   .mobile-menu-trigger:focus-visible { outline: 2px solid rgba(59,130,246,0.55); outline-offset: 2px; }
   
-  /* 3. Style the mobile dropdown menu */
+  
   .mobile-nav {
-    display: none; /* Toggled by JS */
+    display: none;
     position: absolute;
     top: 60px;
     left: 0;
@@ -258,24 +254,24 @@ select option { background: var(--bg3); }
     color: var(--accent);
   }
   
-  /* 4. Hide edit settings button and show swipes on mobile */
+  
   .desktop-only { display: none; }
   .mobile-swipes { display: flex !important; }
   
-  /* 5. Keep existing mobile layout adjustments */
+  
   #view-dashboard { flex-direction: column !important; }
   .dash-left { width: 100% !important; border-right: none; padding: 1rem; }
   .dash-right { padding: 1rem; }
   
-  /* Stack log screen columns */
+  
   #view-log { flex-direction: column !important; }
   .log-left { width: 100% !important; border-right: none; }
   
-  /* Increase tap target sizes for mobile screens */
-  .dash-action-btn, .nav-pill { padding: 12px; font-size: 14px; min-height: 80px; }
-  /* Keep three columns on mobile for dashboard actions */
   
-  /* Optimize grid layout for smaller widths */
+  .dash-action-btn, .nav-pill { padding: 12px; font-size: 14px; min-height: 80px; }
+  
+  
+  
   .stat-grid { grid-template-columns: 1fr 1fr; }
   
   .week-group { margin-bottom: 1.5rem; }

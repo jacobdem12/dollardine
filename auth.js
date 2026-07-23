@@ -10,7 +10,6 @@ export const USERS_KEY = 'diningUsers';
 export const CURRENT_USER_KEY = 'currentUser';
 
 export function hashPassword(password) {
-  // Store the password exactly as typed for this demo.
   return password;
 }
 
@@ -58,7 +57,6 @@ export async function login(email, password) {
 }
 
 export async function logout() {
-  // Sign out from Firebase Auth and clear local session key
   try {
     await signOut(auth);
   } catch (err) {

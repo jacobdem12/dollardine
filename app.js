@@ -287,7 +287,8 @@ async function handleSetupSubmit(e) {
 function handleLogout() {
   logout();
   currentUser = null;
-  Object.assign(state, { school: 'ncstate', balance: 0, daysLeft: 0, swipes: 0, isUnlimited: false, entries: [] });
+  resetAppState();
+  resetSessionUI();
   showPageAuth();
 }
 
@@ -425,6 +426,46 @@ function autoSelectMealTypeByTime() {
 
   const button = document.querySelector(`.meal-type-btn[data-type="${type}"]`);
   if (button) selectMealType(button);
+}
+
+function resetSessionUI() {
+  if (UI.authUsername) UI.authUsername.value = '';
+  if (UI.authPassword) UI.authPassword.value = '';
+  if (UI.setupSchoolDropdown) UI.setupSchoolDropdown.value = 'ncstate';
+  if (UI.setupBalance) UI.setupBalance.value = '';
+  if (UI.setupDays) UI.setupDays.value = '';
+  if (UI.setupSwipes) UI.setupSwipes.value = '';
+  if (UI.editSchoolDropdown) UI.editSchoolDropdown.value = 'ncstate';
+  if (UI.editBalance) UI.editBalance.value = '';
+  if (UI.editDays) UI.editDays.value = '';
+  if (UI.editSwipes) UI.editSwipes.value = '';
+  if (UI.logLocation) UI.logLocation.value = '';
+  if (UI.logAmount) UI.logAmount.value = '';
+  if (UI.logNote) UI.logNote.value = '';
+  if (UI.logDate) UI.logDate.value = getTodayISO();
+  if (UI.amountPreview) UI.amountPreview.textContent = '—';
+  if (UI.locationSelectorLabel) UI.locationSelectorLabel.textContent = 'Locations: Select a location ↓';
+  if (UI.locationList) UI.locationList.innerHTML = '';
+  if (UI.authMessage) UI.authMessage.textContent = '';
+  if (UI.swipeActionBtn) UI.swipeActionBtn.style.display = 'none';
+  if (UI.logMealBtn) UI.logMealBtn.textContent = 'Save entry →';
+
+  selectedMealType = 'breakfast';
+  selectedLocation = null;
+  currentEditIndex = null;
+}
+
+function resetAppState() {
+  Object.assign(state, {
+    school: 'ncstate',
+    balance: 0,
+    daysLeft: 0,
+    swipes: 0,
+    isUnlimited: false,
+    recentLocation: '',
+    entries: [],
+    sortByWeek: false
+  });
 }
 
 async function startTracking() {
@@ -1019,13 +1060,8 @@ onAuthStateChanged(auth, (user) => {
             mealsListenerUnsub = null;
         }
 
-        state.school = 'ncstate';
-        state.balance = 0;
-        state.daysLeft = 0;
-        state.swipes = 0;
-        state.isUnlimited = false;
-        state.recentLocation = '';
-        state.entries = [];
+        resetAppState();
+        resetSessionUI();
 
         if (UI.historyContent) {
           UI.historyContent.innerHTML = '<div class="empty-state">No entries yet.</div>';

@@ -138,3 +138,40 @@ export const SCHOOLS = {
     ]
   }
 };
+
+// Ensure every location has a numeric `averageCost` property.
+// Defaults:
+// - Dining halls / AYCE (isDH or type === 'unlimited') => 0.00
+// - Coffee / cafe keywords => 5.00
+// - Otherwise (retail / fast food) => 11.00
+function ensureAverageCosts() {
+  const coffeeKeywords = ['starbuck', 'java', 'dunkin', 'coffee', 'cafe', 'beans', 'port city', 'portcity'];
+  Object.values(SCHOOLS).forEach(school => {
+    school.sections.forEach(section => {
+      section.locs.forEach(loc => {
+        if (loc.averageCost === undefined || loc.averageCost === null) {
+          // Dining halls / all-you-can-eat
+          if (loc.isDH === true || loc.type === 'unlimited') {
+            loc.averageCost = 0.00;
+            return;
+          }
+
+          const name = (loc.name || '').toLowerCase();
+          if (coffeeKeywords.some(k => name.includes(k))) {
+            loc.averageCost = 5.00;
+            return;
+          }
+
+          // Fallback for retail / fast food
+          loc.averageCost = 11.00;
+        } else {
+          // Coerce to number if present
+          loc.averageCost = Number(loc.averageCost);
+          if (Number.isNaN(loc.averageCost)) loc.averageCost = 11.00;
+        }
+      });
+    });
+  });
+}
+
+ensureAverageCosts();

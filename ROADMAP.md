@@ -2,20 +2,20 @@
 
 ## Current focus
 
-1. Stabilize the auth and session flow
-   - Keep login and signup UI separated and predictable
-   - Reset auth, setup, and log form fields on logout or auth state changes
-   - Make sure new account testing starts from a clean slate instead of carrying old values forward
+1. Keep authentication and profile persistence reliable
+   - Preserve the signed-in user’s profile and meal data through refreshes and view changes
+   - Ensure settings updates immediately reflect in the dashboard and remain saved after reloads
+   - Keep onboarding and settings flows aligned with the same profile fields
 
 2. Keep Firestore as the source of truth
    - Let realtime listeners drive dashboard and history state
    - Avoid duplicate meal entries caused by mixing local mutation and cloud updates
    - Clear stale state completely when the user signs out
 
-3. Polish onboarding and mobile experience
-   - Make setup feel quick and reliable on phone screens
-   - Keep the main dashboard and history views readable without excessive scrolling
-   - Improve responsive spacing and compact card layouts
+3. Polish the mobile experience
+   - Keep the dashboard, history, and settings views readable on phone screens
+   - Improve spacing and compact card layouts where needed
+   - Preserve a clean handoff between setup, logging, and settings
 
 ## Near-term priorities
 
@@ -40,6 +40,6 @@
 
 ## Notes
 
-- The app already uses Firebase Auth and Firestore.
+- The app now uses Firebase Auth and Firestore for core profile and meal persistence.
 - The next milestone is a smoother sign-in/sign-out flow and a cleaner mobile-first experience.
-- The roadmap is now focused on reliability and usability before new social or reporting features.
+- The roadmap remains focused on reliability and usability before new social or reporting features.

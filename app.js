@@ -3,12 +3,12 @@ import { formatCurrency, formatDisplayDate, getTodayISO } from './utils.js';
 import { saveMealToCloud, loadUserAppStateFromCloud, saveUserSetupToCloud } from "./storage.js";
 import { signup, login, logout, getCurrentUser, getUserState, saveUserState, getUsers, saveUsers } from './auth.js';
 import { auth } from "./firebase-config.js"; 
-import { doc, collection, onSnapshot, query, orderBy, deleteDoc } from "firebase/firestore";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { doc, collection, onSnapshot, query, orderBy, deleteDoc, getDocs } from "firebase/firestore";
+import { onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { db } from './firebase-config.js'; 
 import {setDoc } from "firebase/firestore";
 
-
+window.SCHOOLS = SCHOOLS;
 
 window.state = window.state || {
   school: 'ncstate',
@@ -39,6 +39,8 @@ const UI = {
   signupBtn: document.getElementById('signup-btn'),
   authMessage: document.getElementById('auth-message'),
   setupSchoolDropdown: document.getElementById('setup-school-dropdown'),
+  setupSchoolSearchInput: document.getElementById('school-search-input-setup'),
+  setupSchoolResultsList: document.getElementById('school-results-list-setup'),
   setupBadge: document.getElementById('setup-badge'),
   setupSchoolName: document.getElementById('setup-school-name'),
   setupBalance: document.getElementById('setup-balance'),
@@ -85,6 +87,8 @@ const UI = {
   resetAllBtn: document.getElementById('reset-all-btn'),
   sortWeekBtn: document.getElementById('sort-week-btn'),
   editSchoolDropdown: document.getElementById('edit-school-dropdown'),
+  schoolSearchInput: document.getElementById('school-search-input'),
+  schoolResultsList: document.getElementById('school-results-list'),
   editBalance: document.getElementById('edit-balance'),
   editDays: document.getElementById('edit-days'),
   editSwipes: document.getElementById('edit-swipes'),
@@ -94,23 +98,42 @@ const UI = {
   exportUsersBtn: document.getElementById('export-users-btn'),
   importUsersBtn: document.getElementById('import-users-btn'),
   importUsersInput: document.getElementById('import-users-input')
+  ,btnDeleteAccount: document.getElementById('btn-delete-account')
 };
 
 function setupAuthListeners() {
   const loginForm = document.getElementById('login-form');
   const signupForm = document.getElementById('signup-form');
 
-  if (loginForm) {
-    loginForm.addEventListener('submit', handleSignin);
-  } else if (UI.signinBtn) {
-    UI.signinBtn.addEventListener('click', handleSignin);
-  }
+// Sign In Handlers
+if (loginForm) {
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    handleSignin(e);
+  });
+}
 
-  if (signupForm) {
-    signupForm.addEventListener('submit', handleSignup);
-  } else if (UI.signupBtn) {
-    UI.signupBtn.addEventListener('click', handleSignup);
-  }
+if (UI.signinBtn) {
+  UI.signinBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    handleSignin(e);
+  });
+}
+
+// Sign Up Handlers
+if (signupForm) {
+  signupForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    handleSignup(e);
+  });
+}
+
+if (UI.signupBtn) {
+  UI.signupBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    handleSignup(e);
+  });
+}
 }
 
 function init() {
@@ -123,16 +146,20 @@ function init() {
 function initUI() {
   // wire auth listeners: prefer form submit if available, else buttons
   setupAuthListeners();
-  UI.setupSchoolDropdown.addEventListener('change', onSetupSchoolChange);
+  if (UI.setupSchoolDropdown) UI.setupSchoolDropdown.addEventListener('change', onSetupSchoolChange);
+  if (UI.setupSchoolSearchInput) UI.setupSchoolSearchInput.addEventListener('input', (event) => handleSchoolSearchInput(event, UI.setupSchoolSearchInput, UI.setupSchoolResultsList, UI.setupSchoolDropdown));
+  if (UI.setupSchoolResultsList) UI.setupSchoolResultsList.addEventListener('click', (event) => selectSchoolResultFromList(event, UI.setupSchoolSearchInput, UI.setupSchoolDropdown, UI.setupSchoolResultsList));
+  if (UI.schoolSearchInput) UI.schoolSearchInput.addEventListener('input', (event) => handleSchoolSearchInput(event, UI.schoolSearchInput, UI.schoolResultsList, UI.editSchoolDropdown));
+  if (UI.schoolResultsList) UI.schoolResultsList.addEventListener('click', (event) => selectSchoolResultFromList(event, UI.schoolSearchInput, UI.editSchoolDropdown, UI.schoolResultsList));
   UI.startTrackingBtn.addEventListener('click', startTracking);
   UI.logoutBtn.addEventListener('click', handleLogout);
   UI.mobileMenuTrigger.addEventListener('click', toggleMobileNav);
   UI.mobileNavItems.forEach(btn => btn.addEventListener('click', () => {
     if (btn.id === 'logout-mobile-btn') return handleLogout();
     const view = btn.dataset.view;
-    if (view) navTo(view);
+    if (view) navTo(view === 'edit' ? 'settings' : view);
   }));
-  UI.navPills.forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
+  UI.navPills.forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view === 'edit' ? 'settings' : btn.dataset.view)));
   UI.dashActionButtons.forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
   UI.locationSelectorBtn.addEventListener('click', toggleLocationDropdown);
   UI.logMealBtn.addEventListener('click', logMeal);
@@ -159,6 +186,7 @@ function initUI() {
   UI.exportUsersBtn.addEventListener('click', exportUsers);
   UI.importUsersBtn.addEventListener('click', () => UI.importUsersInput.click());
   UI.importUsersInput.addEventListener('change', importUsers);
+  if (UI.btnDeleteAccount) UI.btnDeleteAccount.addEventListener('click', handleDeleteAccount);
   UI.historyContent.addEventListener('click', event => {
     const editBtn = event.target.closest('.edit-btn');
     const delBtn = event.target.closest('.del-btn');
@@ -169,6 +197,7 @@ function initUI() {
     if (row) return editHistoryEntry(Number(row.dataset.index));
   });
   UI.logDate.value = getTodayISO();
+  syncSchoolSearchFields();
 }
 
 function toggleMobileNav() {
@@ -196,9 +225,79 @@ function navTo(viewName) {
   showView(viewName);
 }
 
-function onSetupSchoolChange(event) {
-  state.school = event.target.value;
+function syncSchoolSearchFields() {
+  const schoolKey = state.school || 'ncstate';
+  const school = SCHOOLS[schoolKey];
+  if (!school) return;
+
+  if (UI.setupSchoolDropdown) UI.setupSchoolDropdown.value = schoolKey;
+  if (UI.editSchoolDropdown) UI.editSchoolDropdown.value = schoolKey;
+  if (UI.setupSchoolSearchInput) UI.setupSchoolSearchInput.value = school.name;
+  if (UI.schoolSearchInput) UI.schoolSearchInput.value = school.name;
+
   applySetupBranding();
+  applySchoolBranding();
+}
+
+function handleSchoolSearchInput(event, searchInput, resultsList, hiddenInput) {
+  if (!searchInput || !resultsList || !hiddenInput) return;
+
+  const query = (event.target.value || '').trim().toLowerCase();
+  if (!query) {
+    resultsList.innerHTML = '';
+    resultsList.style.display = 'none';
+    return;
+  }
+
+  const matchedSchools = Object.entries(SCHOOLS)
+    .filter(([, school]) => {
+      const haystack = `${school.name} ${school.abbr}`.toLowerCase();
+      return haystack.includes(query);
+    })
+    .slice(0, 8);
+
+  if (matchedSchools.length === 0) {
+    resultsList.innerHTML = '<div style="padding:8px 10px; font-size:13px; color:#9ca3af;">No schools found</div>';
+    resultsList.style.display = 'block';
+    return;
+  }
+
+  resultsList.innerHTML = matchedSchools.map(([key, school]) => `
+    <button type="button" class="school-result-item" data-school-key="${key}" style="display:block; width:100%; text-align:left; padding:10px 12px; border:0; background:transparent; color:#f3f4f6; cursor:pointer;">
+      <div style="font-weight:600;">${school.name}</div>
+      <div style="font-size:12px; opacity:0.7;">${school.abbr}</div>
+    </button>
+  `).join('');
+  resultsList.style.display = 'block';
+}
+
+function selectSchoolResultFromList(event, searchInput, hiddenInput, resultsList) {
+  const resultButton = event.target.closest('.school-result-item');
+  if (!resultButton || !searchInput || !hiddenInput || !resultsList) return;
+
+  const schoolKey = resultButton.dataset.schoolKey;
+  const school = SCHOOLS[schoolKey];
+  if (!school) return;
+
+  searchInput.value = school.name;
+  hiddenInput.value = schoolKey;
+  resultsList.style.display = 'none';
+
+  state.school = schoolKey;
+  syncSchoolSearchFields();
+  onSetupSchoolChange({ target: hiddenInput });
+}
+
+function onSetupSchoolChange(event) {
+  const schoolKey = event?.target?.value || state.school || 'ncstate';
+  const school = SCHOOLS[schoolKey];
+  if (!school) return;
+
+  state.school = schoolKey;
+  syncSchoolSearchFields();
+  buildLocationList();
+  applyMealPrice();
+  updateDashboard();
 }
 
 function applySetupBranding() {
@@ -225,6 +324,7 @@ function handleLogin() {
     const userState = getUserState(username);
     if (userState) {
       Object.assign(state, userState);
+      syncSchoolSearchFields();
       applySchoolBranding();
       showPageMain();
       showView('dashboard');
@@ -311,28 +411,35 @@ function showPageMain() {
 }
 
 function showView(name) {
-  const view = document.getElementById(`view-${name}`);
+  const targetViewId = name === 'edit' || name === 'settings' ? 'view-settings' : `view-${name}`;
+  const view = document.getElementById(targetViewId);
   if (!view) return;
 
-  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(el => {
+    el.classList.remove('active');
+    el.style.display = 'none';
+  });
   UI.navPills.forEach(btn => btn.classList.remove('active'));
 
   closeLocationDropdown();
   closeMobileNav();
 
   view.classList.add('active');
+  view.style.display = 'block';
   const activeNav = UI.navPills.find(btn => btn.dataset.view === name);
   if (activeNav) activeNav.classList.add('active');
 
   if (name === 'dashboard') updateDashboard();
   if (name === 'history') renderHistory();
-  if (name === 'edit') renderEdit();
+  if (name === 'edit' || name === 'settings') renderEdit();
   if (name === 'log') {
     autoSelectMealTypeByTime();
     buildLocationList();
     setTodayDate();
   }
 }
+
+window.showView = showView;
 
 function buildLocationList() {
   const school = SCHOOLS[state.school];
@@ -521,50 +628,84 @@ async function saveUserProfile(uid, setupData) {
   }, { merge: true });
 }
 
+// ==========================================
+// LOG MEAL & QUICK LOG HANDLER
+// ==========================================
+
 async function logMeal(e) {
-    if (e) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-    }
+  if (e) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }
 
-    const location = UI.logLocation.value.trim();
-    const rawAmount = UI.logAmount.value.trim();
-    const amount = rawAmount === '' ? 0 : parseFloat(rawAmount);
-    const rawDate = UI.logDate.value;
-    const isDiningHall = selectedLocation?.dataset.dh === 'true';
+  // Ensure date has a fallback to today if user hasn't selected one
+  if (UI.logDate && !UI.logDate.value) {
+    UI.logDate.value = new Date().toISOString().split('T')[0];
+  }
 
-    if (!location || Number.isNaN(amount) || !rawDate || (rawAmount === '' && !isDiningHall)) {
-      alert('Please fill out location, amount, and date.');
-      return;
-    }
+  const location = UI.logLocation.value.trim();
+  const rawAmount = UI.logAmount.value.trim();
+  const amount = rawAmount === '' ? 0 : parseFloat(rawAmount);
+  const rawDate = UI.logDate.value;
+  const isDiningHall = selectedLocation?.dataset?.dh === 'true';
 
-    const user = auth.currentUser;
-    if (!user) {
-      alert('You must be logged in to log a meal.');
-      return;
-    }
+  if (!location || Number.isNaN(amount) || !rawDate || (rawAmount === '' && !isDiningHall)) {
+    alert('Please fill out location, amount, and date.');
+    return;
+  }
 
-    const entryData = {
-      type: selectedMealType,
-      location,
-      amount,
-      note: UI.logNote.value.trim(),
-      date: formatDisplayDate(rawDate),
-      sortKey: rawDate,
-      timestamp: new Date()
-    };
+  const user = auth.currentUser;
+  if (!user) {
+    alert('You must be logged in to log a meal.');
+    return;
+  }
 
-    try {
-      console.log('Saving meal to cloud in logMeal', { uid: user.uid, entryData });
-      await saveMealToCloud(user.uid, entryData);
-      currentEditIndex = null;
-      UI.logMealBtn.textContent = 'Save entry →';
-      showView('dashboard');
-    } catch (error) {
-      console.error('Failed to log meal:', error);
-      alert('Failed to save meal to cloud. Please try again.');
-    }
+  const entryData = {
+    type: typeof selectedMealType !== 'undefined' ? selectedMealType : 'meal',
+    location,
+    amount,
+    note: UI.logNote ? UI.logNote.value.trim() : '',
+    date: typeof formatDisplayDate === 'function' ? formatDisplayDate(rawDate) : rawDate,
+    sortKey: rawDate,
+    timestamp: new Date()
+  };
+
+  try {
+    console.log('Saving meal to cloud in logMeal', { uid: user.uid, entryData });
+    
+    // YOUR EXACT ORIGINAL CLOUD SAVE CALL
+    await saveMealToCloud(user.uid, entryData);
+    
+    if (typeof currentEditIndex !== 'undefined') currentEditIndex = null;
+    if (UI.logMealBtn) UI.logMealBtn.textContent = 'Save entry →';
+    
+    // Switch view back to dashboard
+    if (typeof showView === 'function') showView('dashboard');
+  } catch (error) {
+    console.error('Failed to log meal:', error);
+    alert('Failed to save meal to cloud. Please try again.');
+  }
 }
+
+// Expose globally so inline HTML onclick always connects
+window.logMeal = logMeal;
+
+// ==========================================
+// AUTOFILL AVERAGE PRICE ON LOCATION CHANGE
+// ==========================================
+
+document.addEventListener('change', (e) => {
+  if (e.target && (e.target.id === 'log-location' || e.target === UI?.logLocation)) {
+    const selectedVal = e.target.value.trim();
+    
+    // Find matching location in window.state or local data
+    const locationData = window.state?.locations?.find(loc => loc.name === selectedVal);
+    
+    if (locationData && locationData.averageCost !== undefined && UI?.logAmount) {
+      UI.logAmount.value = parseFloat(locationData.averageCost).toFixed(2);
+    }
+  }
+});
 
 function editHistoryEntry(index) {
   const entry = state.entries[index];
@@ -655,10 +796,10 @@ async function useSwipe() {
   }
 }
 
-function saveMainData() {
+async function saveMainData() {
   const balance = parseFloat(UI.editBalance.value);
   const days = parseInt(UI.editDays.value, 10);
-  const swipeRaw = UI.editSwipes.value.trim().toLowerCase();
+  const swipeRaw = (UI.editSwipes.value || '').trim().toLowerCase();
 
   if (Number.isNaN(balance) || Number.isNaN(days) || days < 1) {
     alert('Please enter a valid balance and days remaining.');
@@ -677,9 +818,24 @@ function saveMainData() {
     state.swipes = Math.max(parseInt(swipeRaw, 10) || 0, 0);
   }
 
-  saveUserState(currentUser, state);
+  const activeUsername = currentUser || getCurrentUser();
+  if (activeUsername) {
+    currentUser = activeUsername;
+    saveUserState(activeUsername, state);
+  }
+
+  const authUser = auth.currentUser;
+  if (authUser?.uid) {
+    try {
+      await saveUserSetupToCloud(authUser.uid, state);
+    } catch (error) {
+      console.error('saveMainData: failed to save profile to Firestore', error);
+    }
+  }
+
   applySchoolBranding();
-  buildLocationList();
+  updateDashboard();
+  if (typeof buildLocationList === 'function') buildLocationList();
   showView('dashboard');
 }
 
@@ -817,7 +973,7 @@ async function deleteMealEntry(mealId) {
 window.deleteMealEntry = deleteMealEntry;
 
 function renderEdit() {
-  UI.editSchoolDropdown.value = state.school;
+  syncSchoolSearchFields();
   UI.editBalance.value = state.balance.toFixed(2);
   UI.editDays.value = state.daysLeft;
   UI.editSwipes.value = state.isUnlimited ? 'Unlimited' : String(state.swipes);
@@ -1007,6 +1163,7 @@ onAuthStateChanged(auth, (user) => {
             const profileData = docSnap.data();
             console.log("🔥 FIRESTORE SNAPSHOT FIRED WITH DATA:", docSnap.data());
             state.school = profileData.school || state.school;
+            syncSchoolSearchFields();
             state.balance = profileData.balance !== undefined ? profileData.balance : state.balance;
             state.daysLeft = profileData.daysLeft !== undefined ? profileData.daysLeft : state.daysLeft;
             state.swipes = profileData.swipes !== undefined ? profileData.swipes : state.swipes;
@@ -1186,5 +1343,221 @@ async function handleSignin(e) {
   }
 }
 
+// =========================================================
+// BULLETPROOF STEPPER & AVERAGE LOGIC (ZERO DEPENDENCIES)
+// =========================================================
+
+// 1. Stepper Buttons (-$1 / +$1)
+document.addEventListener('click', (e) => {
+  const minusBtn = e.target.closest('#btn-amount-minus');
+  const plusBtn = e.target.closest('#btn-amount-plus');
+
+  if (minusBtn || plusBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const amountInput = document.getElementById('log-amount');
+    const previewEl = document.getElementById('amount-preview');
+    if (!amountInput) return;
+
+    let currentVal = parseFloat(amountInput.value);
+    if (Number.isNaN(currentVal)) currentVal = 0;
+
+    let newVal = currentVal;
+    if (minusBtn) {
+      newVal = Math.max(0, currentVal - 1.00);
+    } else if (plusBtn) {
+      newVal = currentVal + 1.00;
+    }
+
+    const formatted = newVal.toFixed(2);
+    amountInput.value = formatted;
+
+    if (previewEl) {
+      previewEl.textContent = `$${formatted}`;
+    }
+  }
+});
+
+// 2. Location Average Autofill
+document.addEventListener('change', (e) => {
+  if (e.target && e.target.id === 'log-location') {
+    const locName = e.target.value ? e.target.value.trim() : '';
+    const amountInput = document.getElementById('log-amount');
+    const previewEl = document.getElementById('amount-preview');
+    
+    if (!locName || !amountInput) return;
+
+    try {
+      const meals = (window.state && Array.isArray(window.state.meals)) ? window.state.meals : [];
+      const pastMeals = meals.filter(m => m && m.location === locName && Number(m.amount) > 0);
+
+      let avg = null;
+      if (pastMeals.length > 0) {
+        const total = pastMeals.reduce((sum, m) => sum + Number(m.amount || 0), 0);
+        avg = (total / pastMeals.length).toFixed(2);
+      } else if (window.state && Array.isArray(window.state.locations)) {
+        const locData = window.state.locations.find(l => l && l.name === locName);
+        if (locData && locData.averageCost !== undefined) {
+          avg = parseFloat(locData.averageCost).toFixed(2);
+        }
+      }
+
+      if (avg !== null) {
+        amountInput.value = avg;
+        if (previewEl) previewEl.textContent = `$${avg}`;
+      }
+    } catch (err) {
+      console.warn('Location avg notice:', err);
+    }
+  }
+});
+
+// =========================================================
+// UNIVERSAL VIEW SWITCHER & RENDER FALLBACKS
+// =========================================================
+
+// 1. Standalone History Renderer
+window.renderHistory = function() {
+  console.log('[App] Rendering History View...');
+  const historyView = document.getElementById('view-history');
+  if (!historyView) return;
+
+  const meals = (window.state && Array.isArray(window.state.meals)) ? window.state.meals : [];
+  const listContainer = document.getElementById('history-list') || historyView;
+
+  if (meals.length === 0) {
+    const emptyEl = document.getElementById('history-list');
+    if (emptyEl) {
+      emptyEl.innerHTML = `<div style="text-align:center; padding: 2rem; color: #9ca3af;">No logged meals found.</div>`;
+    }
+    return;
+  }
+
+  const listEl = document.getElementById('history-list');
+  if (listEl) {
+    listEl.innerHTML = meals.map(m => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding: 12px; border-bottom: 1px solid #374151;">
+        <div>
+          <div style="font-weight:bold; color:#fff;">${m.location || 'Meal Entry'}</div>
+          <div style="font-size:12px; color:#9ca3af;">${m.date || ''} • ${m.type || 'Meal'}</div>
+        </div>
+        <div style="font-weight:bold; color:#fbbf24;">$${parseFloat(m.amount || 0).toFixed(2)}</div>
+      </div>
+    `).join('');
+  }
+};
+
+// 2. Standalone Settings Renderer
+window.renderSettings = function() {
+  console.log('[App] Rendering Settings View...');
+};
+
+// 3. Fail-Safe Global showView Function
+window.showView = function(viewName) {
+  console.log('[App] Switching to view:', viewName);
+
+  // Hide all views
+  document.querySelectorAll('.view').forEach(v => {
+    v.classList.remove('active');
+    v.style.display = 'none';
+  });
+
+  // Target view element
+  const target = document.getElementById(`view-${viewName}`);
+  if (target) {
+    target.classList.add('active');
+    target.style.display = 'flex';
+  } else {
+    console.error(`[App] HTML wrapper missing: id="view-${viewName}"`);
+    return;
+  }
+
+  // Update Nav Pill Active states
+  document.querySelectorAll('[data-view]').forEach(btn => {
+    if (btn.getAttribute('data-view') === viewName) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // Execute Renderers
+  if (viewName === 'history' && typeof window.renderHistory === 'function') {
+    window.renderHistory();
+  }
+  if (viewName === 'settings' && typeof window.renderSettings === 'function') {
+    window.renderSettings();
+  }
+};
+
+// 4. Global Event Listener for Nav Tabs
+document.addEventListener('click', (e) => {
+  const navBtn = e.target.closest('[data-view]');
+  if (navBtn) {
+    e.preventDefault();
+    const targetView = navBtn.getAttribute('data-view');
+    window.showView(targetView);
+  }
+});
+
 init();
+
+// ==========================================
+// ACCOUNT DELETION
+// ==========================================
+export async function handleDeleteAccount() {
+  const user = auth.currentUser;
+  if (!user) {
+    alert('No authenticated user found. Please sign in.');
+    return;
+  }
+
+  const confirmDelete = confirm('This will permanently delete your account and all associated data. Are you sure you want to continue?');
+  if (!confirmDelete) return;
+
+  try {
+    // Delete all documents in users/{uid}/transactions (or meals)
+    const txCol = collection(db, 'users', user.uid, 'transactions');
+    const txSnapshot = await getDocs(txCol);
+    const deletePromises = [];
+    txSnapshot.forEach(docSnap => {
+      const dref = doc(db, 'users', user.uid, 'transactions', docSnap.id);
+      deletePromises.push(deleteDoc(dref));
+    });
+
+    // also delete meals subcollection if present
+    const mealsCol = collection(db, 'users', user.uid, 'meals');
+    const mealsSnapshot = await getDocs(mealsCol);
+    mealsSnapshot.forEach(docSnap => {
+      const dref = doc(db, 'users', user.uid, 'meals', docSnap.id);
+      deletePromises.push(deleteDoc(dref));
+    });
+
+    await Promise.all(deletePromises);
+
+    // Delete main user document
+    const userDocRef = doc(db, 'users', user.uid);
+    await deleteDoc(userDocRef);
+
+    // Unsubscribe any active listener stored on window
+    if (window.unsubscribeFirestore && typeof window.unsubscribeFirestore === 'function') {
+      try { window.unsubscribeFirestore(); } catch (e) { console.warn('Error unsubscribing:', e); }
+      window.unsubscribeFirestore = null;
+    }
+
+    // Delete auth user
+    await deleteUser(user);
+
+    alert('Account deleted. If you still see data, please sign out and sign back in.');
+    handleLogout();
+  } catch (err) {
+    console.error('Error deleting account:', err);
+    if (err && err.code === 'auth/requires-recent-login') {
+      alert('For security, please sign out and sign back in, then try again.');
+      return;
+    }
+    alert('Failed to delete account. See console for details.');
+  }
+}
 

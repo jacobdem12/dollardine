@@ -1,30 +1,32 @@
 # User Authentication Documentation
 
 ## Overview
-The Dining Dollars Tracker supports user accounts for personalized tracking. User data is stored locally in the browser's `localStorage`.
+DollarDine supports signed-in users with personalized dining budgets and meal history. Authentication is handled by Firebase Auth, while app profile and meal data are stored in Firestore.
 
-## Storage Structure
-- **Users**: Stored under key `'diningUsers'` as a JSON object: `{ username: { password: 'hashedPassword', state: userState } }`
-- **Current User**: Stored under key `'currentUser'` as the logged-in username string.
+## Storage structure
+- **Local user registry**: Stored in browser localStorage under the key `diningUsers` as a JSON object of user accounts and saved state.
+- **Current user**: Stored under the key `currentUser` as the logged-in email address.
+- **Firestore profile**: Saved to the signed-in user document at `users/{uid}` with the school, balance, days remaining, swipe count, and unlimited flag.
+- **Firestore meals**: Saved to the collection `users/{uid}/meals` with each meal or swipe entry.
 
-## Password Security
-Passwords are hashed using base64 encoding (`btoa()`) for basic obfuscation. This is not secure for production; use proper hashing like bcrypt in a real app.
+## Password handling
+Passwords are created and handled through Firebase Auth. The local user registry remains a lightweight fallback for app state and export/import workflows.
 
 ## Functions
-- `signup(username, password)`: Creates a new user account.
-- `login(username, password)`: Authenticates and logs in a user.
+- `signup(email, password)`: Creates a new Firebase-authenticated user account.
+- `login(email, password)`: Authenticates and logs in a user.
 - `logout()`: Logs out the current user.
-- `getCurrentUser()`: Returns the current logged-in username.
-- `getUserState(username)`: Retrieves the user's app state.
-- `saveUserState(username, state)`: Saves the user's app state.
+- `getCurrentUser()`: Returns the current logged-in email from localStorage.
+- `getUserState(username)`: Retrieves the user’s locally stored app state.
+- `saveUserState(username, state)`: Saves the user’s app state to the local user registry.
 
 ## Flow
-1. On app load, check for `currentUser`.
-2. If logged in, load user state and show main app.
-3. If not, show auth page for login/signup.
-4. After setup, save state per user.
+1. On app load, Firebase auth state determines whether a user is signed in.
+2. If logged in, Firestore listeners load the profile and meal history into the active app state.
+3. If not, the app shows the auth screen for login or signup.
+4. After onboarding or when Settings are saved, the app writes profile changes back to Firestore and updates the current session state.
 
 ## Export/Import
-- In Settings, use "Export Users" to download a `users.json` file with all user data.
-- Use "Import Users" to load a `users.json` file and restore user accounts.
-- This allows backing up and restoring accounts across devices or browser resets.
+- In Settings, use “Export Users” to download a `users.json` file with the locally stored user registry.
+- Use “Import Users” to restore that JSON data and rehydrate local accounts.
+- This is useful for backups or moving account data between browsers or devices.

@@ -1,5 +1,11 @@
 {
   "appId": "com.dollardine.app",
   "appName": "DollarDine",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "webContentsDebuggingEnabled": true
+  }
 }

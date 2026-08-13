@@ -1,37 +1,30 @@
-# Dining Dollars Tracker Toolchain
+# DollarDine Toolchain
 
-## Development Tools
+## Core stack
+- Vite for local development and production builds
+- Vanilla HTML, CSS, and JavaScript for the UI and app logic
+- Firebase Auth and Firestore for sign-in and persistent user data
+- Capacitor for wrapping the app for Android
+
+## Development tools
 - Browser with DevTools
   - Chrome, Edge, or Firefox
-  - Use Console, Elements, and Network panels
-- Local development server
-  - `Live Server` VS Code extension
-  - `python -m http.server`
-  - `npx serve`
+  - Use Console, Elements, and Network panels for debugging
+- VS Code for editing and local development
 
-## Version Control
-- `git`
-  - Track changes and create commits for refactor stages
+## Package management
+- npm
+  - Install dependencies and run the app scripts
 
-## Formatting and Linting
-- `Prettier` for HTML/CSS/JS formatting
-- `ESLint` for JavaScript quality checks
-- `stylelint` for CSS linting
-
-## Package Management
-- `npm` or `pnpm`
-  - Manage dev dependencies for linting and formatting tools
-
-## Recommended Commands
-- Start a local server:
-  - `python -m http.server`
-  - `npx serve .`
-- Format code:
-  - `npx prettier --write .`
-- Lint code:
-  - `npx eslint .`
+## Recommended commands
+- Start the dev server:
+  - `npm run dev`
+- Build for production:
+  - `npm run build`
+- Run the Android app locally after building:
+  - `npx cap run android`
 
 ## Notes
-- Keep style and logic separate by using dedicated CSS and JS modules.
-- Use version control to commit each refactor step.
-- Add a `package.json` only if you want reusable scripts for linting and formatting.
+- Keep UI markup, styling, and app behavior separated across the HTML, CSS, and JavaScript files.
+- Use version control to review each functional change.
+- Firestore is the main persistence layer for profile and meal data, while the local user registry remains available for lightweight local state fallback.

@@ -464,7 +464,7 @@ function buildLocationList() {
   selectedLocation = null;
   UI.logLocation.value = '';
   UI.logAmount.value = '';
-  UI.amountPreview.textContent = '—';
+  if (UI.amountPreview) UI.amountPreview.textContent = '—';
   UI.logNote.value = '';
   UI.swipeActionBtn.style.display = 'none';
   UI.locationSelectorLabel.textContent = state.recentLocation ? `Locations: ${state.recentLocation} ↓` : 'Locations: Select a location ↓';
@@ -495,25 +495,25 @@ function selectLocation(button) {
 function applyMealPrice() {
   if (!selectedLocation) {
     UI.logAmount.value = '';
-    UI.amountPreview.textContent = '—';
+    if (UI.amountPreview) UI.amountPreview.textContent = '—';
     return;
   }
 
   const map = { breakfast: 'b', lunch: 'l', dinner: 'd', snack: 's' };
   const price = parseFloat(selectedLocation.dataset[map[selectedMealType]] || '0');
   UI.logAmount.value = price > 0 ? price.toFixed(2) : '';
-  UI.amountPreview.textContent = price > 0 ? formatCurrency(price) : '—';
+  if (UI.amountPreview) UI.amountPreview.textContent = price > 0 ? formatCurrency(price) : '—';
 }
 
 function updateAmountPreview() {
   const rawValue = UI.logAmount.value.trim();
   const value = parseFloat(rawValue);
   if (!Number.isNaN(value) && value > 0) {
-    UI.amountPreview.textContent = formatCurrency(value);
+    if (UI.amountPreview) UI.amountPreview.textContent = formatCurrency(value);
   } else if (rawValue === '0' || rawValue === '0.00') {
-    UI.amountPreview.textContent = 'Swipe';
+    if (UI.amountPreview) UI.amountPreview.textContent = 'Swipe';
   } else {
-    UI.amountPreview.textContent = '—';
+    if (UI.amountPreview) UI.amountPreview.textContent = '—';
   }
 }
 
@@ -573,6 +573,26 @@ function resetAppState() {
     entries: [],
     sortByWeek: false
   });
+}
+
+function handleDeleteClick(buttonElement, entryId) {
+  // Check if button is already in "confirm" state
+  if (buttonElement.dataset.confirming === "true") {
+    // Step 2: Delete on second click
+    removeEntryFromStateOrDB(entryId);
+  } else {
+    // Step 1: Enter confirmation state
+    buttonElement.dataset.confirming = "true";
+    buttonElement.textContent = "Confirm Delete?";
+    buttonElement.style.backgroundColor = "#dc3545"; // Red highlight
+
+    // Reset back to normal after 3 seconds if not clicked again
+    setTimeout(() => {
+      buttonElement.dataset.confirming = "false";
+      buttonElement.textContent = "Delete";
+      buttonElement.style.backgroundColor = "";
+    }, 3000);
+  }
 }
 
 async function startTracking() {
@@ -731,10 +751,10 @@ function editHistoryEntry(index) {
   UI.logDate.value = entry.sortKey;
   if (entry.amount > 0) {
     UI.logAmount.value = entry.amount.toFixed(2);
-    UI.amountPreview.textContent = formatCurrency(entry.amount);
+    if (UI.amountPreview) UI.amountPreview.textContent = formatCurrency(entry.amount);
   } else {
     UI.logAmount.value = '0.00';
-    UI.amountPreview.textContent = 'Swipe';
+    if (UI.amountPreview) UI.amountPreview.textContent = 'Swipe';
   }
   UI.logNote.value = entry.note || '';
   UI.logMealBtn.textContent = 'Save changes →';

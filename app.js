@@ -384,6 +384,7 @@ async function handleSetupSubmit(e) {
   }
 }
 
+
 function handleLogout() {
   logout();
   currentUser = null;

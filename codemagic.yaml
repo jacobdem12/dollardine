@@ -6,6 +6,8 @@ workflows:
     integrations:
       app_store_connect: Apple Key
     environment:
+      groups:
+        - appstore_credentials # Matches the group name in Codemagic.io
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.dollardine.app

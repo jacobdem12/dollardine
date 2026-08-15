@@ -3,15 +3,13 @@ workflows:
     name: iOS Capacitor Build
     max_build_duration: 120
     instance_type: mac_mini_m2
-    integrations:
-      app_store_connect: Apple Key  # Name of the key saved in Codemagic settings
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.dollardine.app
+      groups:
+        - appstore_credentials
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.dollardine.app"
       node: 20
       xcode: latest
     scripts:
@@ -22,9 +20,9 @@ workflows:
         script: |
           npm run build
           npx cap sync ios
-      - name: Set up Code Signing
+      - name: Fetch and Set up Code Signing
         script: |
-          xcode-project use-profiles
+          xcode-project use-profiles --profile-type=app_store
       - name: Build iOS App (.ipa)
         script: |
           xcode-project build-ipa \

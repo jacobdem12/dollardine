@@ -1,0 +1,12 @@
+{
+	"appId": "com.dollardine.app",
+	"appName": "DollarDine",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	},
+	"android": {
+		"webContentsDebuggingEnabled": true
+	},
+	"packageClassList": []
+}

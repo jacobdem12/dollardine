@@ -12,6 +12,7 @@ workflows:
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.dollardine.app"
       node: 22
       xcode: latest
     scripts:
@@ -22,9 +23,17 @@ workflows:
         script: |
           npm run build
           npx cap sync ios
+      - name: Initialize keychain
+        script: |
+          keychain initialize
+      - name: Fetch and create iOS signing files
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
       - name: Set up code signing on Xcode project
         script: |
-          xcode-project use-profiles --create
+          xcode-project use-profiles
       - name: Build iOS App (.ipa)
         script: |
           xcode-project build-ipa \

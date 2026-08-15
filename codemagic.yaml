@@ -6,12 +6,12 @@ workflows:
     integrations:
       app_store_connect: Apple Key
     environment:
-      groups:
-        - appstore_credentials
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.dollardine.app
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        BUNDLE_ID: "com.dollardine.app"
       node: 22
       xcode: latest
     scripts:
@@ -22,11 +22,6 @@ workflows:
         script: |
           npm run build
           npx cap sync ios
-      - name: Fetch iOS signing files
-        script: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
       - name: Set up code signing on Xcode project
         script: |
           xcode-project use-profiles
@@ -41,3 +36,4 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+        

@@ -3766,6 +3766,276 @@ cmu: {
     ]}
   ]
 },
+gcu: {
+  name: 'Grand Canyon University', abbr: 'GCU', color: '#5c068c',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'The Grille at GCU', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+      { name: 'Antelope Dining Hall', b: 9.00, l: 12.00, d: 14.00, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Student Union)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Chick-fil-A (Student Union)', b: 7.25, l: 10.25, d: 10.25, s: 4.00 },
+      { name: 'Lope Shop Café', b: 6.50, l: 9.50, d: 9.50, s: 4.00 },
+      { name: 'Canyon Activities Center Café', b: 6.50, l: 9.50, d: 9.50, s: 4.00 },
+    ]}
+  ]
+},
+cmich: {
+  name: 'Central Michigan University', abbr: 'CMU', color: '#6a0032',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Real Food on Campus (Robinson)', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+      { name: 'Woldt-Larzelere Dining', b: 9.00, l: 12.00, d: 14.00, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Bovee UC)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Chick-fil-A (Bovee UC)', b: 7.25, l: 10.25, d: 10.25, s: 4.00 },
+      { name: 'Chippewa Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+    ]}
+  ]
+},
+emich: {
+  name: 'Eastern Michigan University', abbr: 'EMU', color: '#00694e',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Eastern Eateries (Dining Commons)', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Student Center)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Eagle Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+      { name: 'Halle Library Café', b: 6.50, l: 9.50, d: 9.50, s: 4.00 },
+    ]}
+  ]
+},
+nmu: {
+  name: 'Northern Michigan University', abbr: 'NMU', color: '#00543c',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'The Marketplace', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (University Center)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Wildcat Den', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+      { name: 'Café Bella (Library)', b: 6.50, l: 9.50, d: 9.50, s: 4.00 },
+    ]}
+  ]
+},
+gvsu: {
+  name: 'Grand Valley State University', abbr: 'GVSU', color: '#0033a0',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Fresh Food Company (Kirkhof)', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+      { name: 'Kleiner Dining Hall', b: 9.00, l: 12.00, d: 14.00, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Kirkhof Center)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Chick-fil-A (Kirkhof Center)', b: 7.25, l: 10.25, d: 10.25, s: 4.00 },
+      { name: 'Laker Marketplace', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+    ]}
+  ]
+},
+ferris: {
+  name: 'Ferris State University', abbr: 'FSU', color: '#c8102e',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Rock Café (Rock Dining Hall)', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (University Center)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Bulldog Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+      { name: 'FLITE Library Café', b: 6.50, l: 9.50, d: 9.50, s: 4.00 },
+    ]}
+  ]
+},
+wiu: {
+  name: 'Western Illinois University', abbr: 'WIU', color: '#663399',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Corbin/Olson Dining Hall', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (University Union)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Leatherneck Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+      { name: 'Malpass Library Café', b: 6.50, l: 9.50, d: 9.50, s: 4.00 },
+    ]}
+  ]
+},
+siuc: {
+  name: 'Southern Illinois University Carbondale', abbr: 'SIUC', color: '#8a0303',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Trueblood Dining Hall', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+      { name: 'Grinnell Dining Hall', b: 9.00, l: 12.00, d: 14.00, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Student Center)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Chick-fil-A (Student Center)', b: 7.25, l: 10.25, d: 10.25, s: 4.00 },
+      { name: 'Saluki Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+    ]}
+  ]
+},
+niu: {
+  name: 'Northern Illinois University', abbr: 'NIU', color: '#c8102e',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Neptune Dining Hall', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+      { name: 'Grant Towers Dining', b: 9.00, l: 12.00, d: 14.00, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Holmes Student Center)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Huskie Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+      { name: 'Founders Library Café', b: 6.50, l: 9.50, d: 9.50, s: 4.00 },
+    ]}
+  ]
+},
+uwm: {
+  name: 'University of Wisconsin–Milwaukee', abbr: 'UWM', color: '#000000',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Sandburg Dining Hall', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Union)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Panther Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+      { name: 'Golda Meir Library Café', b: 6.50, l: 9.50, d: 9.50, s: 4.00 },
+    ]}
+  ]
+},
+uwosh: {
+  name: 'University of Wisconsin–Oshkosh', abbr: 'UWO', color: '#000000',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Blackhawk Commons', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Reeve Union)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Titan Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+    ]}
+  ]
+},
+uwgb: {
+  name: 'University of Wisconsin–Green Bay', abbr: 'UWGB', color: '#00543c',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'The Marketplace at Phoenix Hall', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (University Union)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Phoenix Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+    ]}
+  ]
+},
+uwlax: {
+  name: 'University of Wisconsin–La Crosse', abbr: 'UWL', color: '#8a2432',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Whitney Center Dining', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Student Union)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Eagle Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+    ]}
+  ]
+},
+uwstout: {
+  name: 'University of Wisconsin–Stout', abbr: 'UWS', color: '#003d63',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Commons Dining Hall', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Memorial Student Center)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Blue Devil Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+    ]}
+  ]
+},
+mnsu: {
+  name: 'Minnesota State University, Mankato', abbr: 'MNSU', color: '#582c83',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Carkoski Commons', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Centennial Student Union)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Maverick Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+    ]}
+  ]
+},
+scsu: {
+  name: 'St. Cloud State University', abbr: 'SCSU', color: '#c8102e',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Garvey Commons', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Atwood Center)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Husky Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+    ]}
+  ]
+},
+umd: {
+  name: 'University of Minnesota Duluth', abbr: 'UMD', color: '#7a1e2f',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Bulldog Dining Hall', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Kirby Student Center)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Bulldog Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+    ]}
+  ]
+},
+sdsmt: {
+  name: 'South Dakota School of Mines & Technology', abbr: 'SDSMT', color: '#003057',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Surbeck Center Dining Hall', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Surbeck Center)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Hardrocker Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+    ]}
+  ]
+},
+mst: {
+  name: 'Missouri University of Science and Technology', abbr: 'MST', color: '#3b2071',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Havener Center Dining Hall', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+      { name: 'Residential Commons Dining', b: 9.00, l: 12.00, d: 14.00, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Havener Center)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Miner Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+    ]}
+  ]
+},
+ucm: {
+  name: 'University of Central Missouri', abbr: 'UCM', color: '#231f20',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Elliott Dining Hall', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Elliott Student Union)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Mule Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+    ]}
+  ]
+},
+wsu: {
+  name: 'Wichita State University', abbr: 'WSU', color: '#ffc82e',
+  sections: [
+    { label: 'Unlimited Dining Halls', locs: [
+      { name: 'Shocker Dining Hall', b: 9.50, l: 12.50, d: 14.50, s: 5.00, isDH: true, type: 'unlimited' },
+    ]},
+    { label: 'Retail Dining', locs: [
+      { name: 'Panda Express (Rhatigan Student Center)', b: 0, l: 11.50, d: 11.50, s: 5.00 },
+      { name: 'Chick-fil-A (Rhatigan Student Center)', b: 7.25, l: 10.25, d: 10.25, s: 4.00 },
+      { name: 'Shocker Market', b: 7.00, l: 10.00, d: 10.00, s: 4.00 },
+    ]}
+  ]
+},
 };
 
 function ensureAverageCosts() {
